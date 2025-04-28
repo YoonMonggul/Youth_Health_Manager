@@ -11,7 +11,8 @@ import {
   Users, 
   MessageSquare, 
   ClipboardCheck, 
-  Settings 
+  Settings,
+  LineChart 
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -23,6 +24,7 @@ const Sidebar: React.FC = () => {
     { name: '건강관리', path: '/health', icon: Heart },
     { name: '교육자료', path: '/education', icon: BookOpen },
     { name: '대상자관리', path: '/students', icon: Users },
+    { name: '성장 데이터', path: '/growth', icon: LineChart },
     { name: '메시지관리', path: '/messages', icon: MessageSquare },
     { name: '검진관리', path: '/checkups', icon: ClipboardCheck },
     { name: '설정', path: '/settings', icon: Settings }

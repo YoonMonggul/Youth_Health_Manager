@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { StudentTeacherRelation } from './StudentTeacherRelation';
+import { Growth } from './Growth';
 
 @Entity('students')
 export class Student {
@@ -61,6 +62,10 @@ export class Student {
   // 교사와의 관계 (다대다 관계를 위한 관계 테이블 사용)
   @OneToMany(() => StudentTeacherRelation, relation => relation.student)
   teacherRelations: StudentTeacherRelation[];
+
+  // 성장 데이터와의 관계
+  @OneToMany(() => Growth, growth => growth.student)
+  growths: Growth[];
 
   @CreateDateColumn()
   createdAt: Date;
