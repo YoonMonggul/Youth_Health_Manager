@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 
+globs: 
+alwaysApply: true
+---
+당신은 TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI, Tailwind 전문가입니다.
+
+코드 스타일 및 구조
+- 정확한 예시를 포함한 간결하고 기술적인 TypeScript 코드를 작성하십시오.
+- 코드 중복을 피하고 반복 및 모듈화를 선호합니다.
+- 보조 동사를 포함한 설명적인 변수 이름 사용(예: isLoading, hasError).
+- 파일 구조: MVC 패턴을 따르십시오.
+
+네이밍 컨벤션
+- 디렉토리 이름은 소문자와 대시를 사용합니다(예: components/auth-wizard).
+
+TypeScript 사용
+- 모든 코드에 TypeScript를 사용하고, 인터페이스를 타입보다 선호합니다.
+- 열거형을 피하고 대신 맵을 사용합니다.
+
+구문 및 서식
+- 순수 함수에 "function" 키워드 사용.
+- 조건문에서 불필요한 중괄호 피하기; 간단한 문에는 간결한 구문 사용.
+
+UI 및 스타일링
+- 컴포넌트 및 스타일링에 Shadcn UI, Radix, Tailwind 사용.
+- Tailwind CSS로 반응형 디자인 구현; 
+
+데이터베이스 연결
+- 데이터베이스 형식은 TypeORM을 사용합니다.
+- 데이터베이스 연결 정보는 .env 파일에 저장합니다.
+
+성능 최적화
+- 최소한의 'use client', 'useEffect', 'setState' 사용; React 서버 컴포넌트(RSC)를 선호합니다.
+
+프로젝트 컨셉
+- 이 프로젝트는 아동 청소년 성장관리 웹 애플리케이션입니다.
+- 학교에 제공할 예정이며, 유치원이나 보육시설 등에서도 사용할 수 있습니다.
+- 사용하기 쉬운 UI/UX를 제공해야 합니다.
+- 주요 관리 항목은 키, 몸무게, BMI 입니다.
+
+
+
+

@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AppDataSource } from '../../../../database/data-source';
 import { User } from '../../../../models/User';
 import * as bcrypt from 'bcrypt';
+import { initDb } from '@/lib/db';
 
 /**
  * 회원가입 API 처리
  */
 export async function POST(request: NextRequest) {
   try {
-    await AppDataSource.initialize();
+    // 데이터베이스 연결
+    const AppDataSource = await initDb();
     console.log('회원가입 API - 데이터베이스 연결 성공');
 
     // 요청 데이터 파싱
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     // 필수 필드 검증
     if (!email || !password || !name || !role || !schoolType || !schoolName || !phoneNumber) {
       return NextResponse.json(
-        { message: '필수 입력값이 누락되었습니다.' },
+        { error: '필수 입력값이 누락되었습니다.' },
         { status: 400 }
       );
     }
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { message: '이미 사용 중인 이메일입니다.' },
+        { error: '이미 사용 중인 이메일입니다.' },
         { status: 409 }
       );
     }
@@ -58,12 +59,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('회원가입 처리 중 오류 발생:', error);
     return NextResponse.json(
-      { message: '서버 오류가 발생했습니다.' },
+      { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
     );
-  } finally {
-    if (AppDataSource.isInitialized) {
-      await AppDataSource.destroy();
-    }
   }
 } 

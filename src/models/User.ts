@@ -11,7 +11,7 @@ export class User {
   @Column({ unique: true, length: 100 })
   email: string;
 
-  @Column({ select: false }) // 기본 쿼리에서 비밀번호 제외
+  @Column()
   password: string;
 
   @Column({

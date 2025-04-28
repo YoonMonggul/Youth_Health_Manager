@@ -3,6 +3,7 @@ import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/ui/Sidebar";
 import Header from "@/components/ui/Header";
+import { initDb } from "@/lib/db";
 
 const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
@@ -14,6 +15,9 @@ export const metadata: Metadata = {
   title: "아동 청소년 성장관리 프로그램",
   description: "아동 청소년 성장 과정을 체계적으로 관리하는 웹 애플리케이션",
 };
+
+// 서버 컴포넌트에서 데이터베이스 초기화
+initDb().catch(console.error);
 
 export default function RootLayout({
   children,

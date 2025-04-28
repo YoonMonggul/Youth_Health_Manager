@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { User } from './User';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { StudentTeacherRelation } from './StudentTeacherRelation';
 
 @Entity('students')
@@ -9,9 +8,6 @@ export class Student {
 
   @Column({ length: 100 })
   name: string;
-
-  @Column({ length: 20 })
-  studentId: string; // 학생 고유 번호
 
   @Column()
   birthDate: Date;

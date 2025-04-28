@@ -1,37 +1,11 @@
 "use client"
 
-import { useState, useEffect, FormEvent } from "react"
-import { ChevronLeft, ChevronRight, Search, Plus, Filter, Trash2, Edit, RefreshCw, X, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ChevronLeft, ChevronRight, Search, Plus, Trash2, Edit, X, AlertCircle } from "lucide-react"
 import { Student } from "../models/Student"
 import moment from 'moment'
 import { Layout } from '@/components/Layout'
-
-// 통계 바 컴포넌트 타입
-interface StatBarProps {
-  label: string
-  value: number
-  color: string
-  percentage?: number
-  fullWidth?: boolean
-}
-
-// 통계 바 컴포넌트
-const StatBar = ({ label, value, color, percentage = 100, fullWidth = false }: StatBarProps) => {
-  return (
-    <div className="mb-2">
-      <div className="flex justify-between mb-1">
-        <span className="text-sm">{label}</span>
-        <span className="text-sm font-medium">{value}</span>
-      </div>
-      <div className={`bg-gray-200 rounded-full h-2.5 ${fullWidth ? 'w-full' : 'w-48'}`}>
-        <div 
-          className={`h-2.5 rounded-full ${color}`} 
-          style={{ width: `${percentage}%` }}
-        ></div>
-      </div>
-    </div>
-  )
-}
+import StudentAddModal from '@/components/modals/StudentAddModal'
 
 // 학교 유형 enum
 export enum SchoolType {
@@ -46,13 +20,6 @@ export enum Gender {
   FEMALE = 'female'
 }
 
-// 학교 통계 인터페이스
-interface SchoolStatistics {
-  schoolType: string;
-  total: { all: number; male: number; female: number };
-  grades: { grade: number; total: number; male: number; female: number }[];
-}
-
 export default function StudentManagement() {
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1)
@@ -61,7 +28,6 @@ export default function StudentManagement() {
 
   // 학생 데이터 상태
   const [students, setStudents] = useState<Student[]>([])
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,31 +36,9 @@ export default function StudentManagement() {
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null)
   const [selectedSchoolType, setSelectedSchoolType] = useState<SchoolType | null>(null)
 
-  // 통계 데이터 상태
-  const [statistics, setStatistics] = useState<SchoolStatistics>({
-    schoolType: 'ALL',
-    total: {
-      all: 0,
-      male: 0,
-      female: 0
-    },
-    grades: [
-      { grade: 1, total: 0, male: 0, female: 0 },
-      { grade: 2, total: 0, male: 0, female: 0 },
-      { grade: 3, total: 0, male: 0, female: 0 },
-      { grade: 4, total: 0, male: 0, female: 0 },
-      { grade: 5, total: 0, male: 0, female: 0 },
-      { grade: 6, total: 0, male: 0, female: 0 }
-    ]
-  })
-
-  // 선택된 학생 상태
-  const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([])
-  const [selectAll, setSelectAll] = useState(false)
-
   // 학생 등록 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [formData, setFormData] = useState<any>({})
+  const [formData, setFormData] = useState<Partial<Student>>({})
   const [editingId, setEditingId] = useState<number | null>(null)
   
   // 알림 상태
@@ -128,23 +72,15 @@ export default function StudentManagement() {
       
       const data = await response.json();
       setStudents(data.students);
-      setFilteredStudents(data.students);
       setTotalPages(data.pagination.totalPages);
-      
-      // 통계 데이터 요청
-      const statsParams = new URLSearchParams();
-      if (selectedSchoolType) statsParams.append('schoolType', selectedSchoolType);
-      statsParams.append('stats', 'true');
-      
-      const statsResponse = await fetch(`/api/students?${statsParams}`);
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStatistics(statsData);
+    } catch (error: unknown) {
+      console.error('Error fetching students:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('학생 목록을 불러오는데 실패했습니다.');
       }
-    } catch (err: any) {
-      console.error('Error fetching students:', err);
-      setError(err.message || '학생 목록을 불러오는데 실패했습니다.');
-      setFilteredStudents([]);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -162,7 +98,7 @@ export default function StudentManagement() {
     setEditingId(student.id)
     setFormData({
       ...student,
-      birthDate: student.birthDate ? new Date(student.birthDate) : null,
+      birthDate: student.birthDate ? new Date(student.birthDate) : undefined,
     })
     setIsModalOpen(true)
   }
@@ -173,21 +109,8 @@ export default function StudentManagement() {
     setIsModalOpen(false)
   }
 
-  // 폼 입력값 변경 핸들러
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  }
-
-  // 날짜 변경 핸들러
-  const handleDateChange = (date: Date) => {
-    setFormData({ ...formData, birthDate: date });
-  }
-
   // 폼 제출 처리
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (formData: Partial<Student>) => {
     try {
       // FormData 검증
       if (!formData.name || !formData.schoolName || !formData.schoolType || !formData.gender || !formData.grade) {
@@ -295,27 +218,6 @@ export default function StudentManagement() {
     setCurrentPage(1); // 필터 변경시 첫 페이지로 이동
   };
 
-  // 전체 선택 토글
-  const toggleSelectAll = () => {
-    const newSelectAll = !selectAll;
-    setSelectAll(newSelectAll);
-    
-    if (newSelectAll) {
-      setSelectedStudentIds(filteredStudents.map(student => student.id));
-    } else {
-      setSelectedStudentIds([]);
-    }
-  };
-
-  // 개별 학생 선택 토글
-  const toggleStudentSelection = (studentId: number) => {
-    if (selectedStudentIds.includes(studentId)) {
-      setSelectedStudentIds(prev => prev.filter(id => id !== studentId));
-    } else {
-      setSelectedStudentIds(prev => [...prev, studentId]);
-    }
-  };
-
   return (
     <Layout pageTitle="학생 관리">
       {alertMessage && (
@@ -401,52 +303,63 @@ export default function StudentManagement() {
       ) : (
         <>
           <div className="overflow-x-auto relative">
-            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 border-collapse border border-gray-300">
+              <thead className="text-[10px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
-                  <th scope="col" className="py-3 px-6">학생 ID</th>
-                  <th scope="col" className="py-3 px-6">이름</th>
-                  <th scope="col" className="py-3 px-6">학교</th>
-                  <th scope="col" className="py-3 px-6">학교 유형</th>
-                  <th scope="col" className="py-3 px-6">학년</th>
-                  <th scope="col" className="py-3 px-6">반</th>
-                  <th scope="col" className="py-3 px-6">성별</th>
-                  <th scope="col" className="py-3 px-6">생년월일</th>
-                  <th scope="col" className="py-3 px-6">관리</th>
+                  <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-24">이름</th>
+                  <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-16">학년</th>
+                  <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-16">반</th>
+                  <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-16">번호</th>
+                  <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-16">성별</th>
+                  <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-32">생년월일</th>
+                  <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-24">보호자</th>
+                  <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-32">보호자 연락처</th>
+                  <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-20">보호자 관계</th>
+                  <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-96">주소</th>
+                  <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-28">관리</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-[11px]">
                 {students.map(student => (
-                  <tr key={student.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                    <td className="py-4 px-6">{student.studentId}</td>
-                    <td className="py-4 px-6">{student.name}</td>
-                    <td className="py-4 px-6">{student.schoolName}</td>
-                    <td className="py-4 px-6">
-                      {student.schoolType === 'elementary' ? '초등학교' : 
-                       student.schoolType === 'middle' ? '중학교' : '고등학교'}
+                  <tr key={student.id} className="bg-white dark:bg-gray-800">
+                    <td className="py-2 px-3 text-center border border-gray-300">{student.name}</td>
+                    <td className="py-2 px-2 text-center border border-gray-300">{student.grade}</td>
+                    <td className="py-2 px-2 text-center border border-gray-300">{student.classNumber}</td>
+                    <td className="py-2 px-2 text-center border border-gray-300">{student.studentNumber}</td>
+                    <td className="py-2 px-2 text-center border border-gray-300">{student.gender === 'male' ? '남' : '여'}</td>
+                    <td className="py-2 px-3 text-center border border-gray-300">{student.birthDate ? moment(student.birthDate).format('YYYY-MM-DD') : '-'}</td>
+                    <td className="py-2 px-3 text-center border border-gray-300">{student.parentName || '-'}</td>
+                    <td className="py-2 px-3 text-center border border-gray-300">{student.parentContact || '-'}</td>
+                    <td className="py-2 px-2 text-center border border-gray-300">
+                      {student.parentRelation ? 
+                        student.parentRelation === 'father' ? '부' :
+                        student.parentRelation === 'mother' ? '모' :
+                        student.parentRelation === 'grandfather' ? '조부' :
+                        student.parentRelation === 'grandmother' ? '조모' :
+                        student.parentRelation === 'uncle' ? '삼촌/외삼촌' :
+                        student.parentRelation === 'aunt' ? '고모/이모' :
+                        '기타'
+                        : '-'}
                     </td>
-                    <td className="py-4 px-6">{student.grade}</td>
-                    <td className="py-4 px-6">{student.classNumber}</td>
-                    <td className="py-4 px-6">{student.gender === 'male' ? '남' : '여'}</td>
-                    <td className="py-4 px-6">{student.birthDate ? moment(student.birthDate).format('YYYY-MM-DD') : '-'}</td>
-                    <td className="py-4 px-6">
-                      <div className="flex space-x-2">
+                    <td className="py-2 px-3 text-center border border-gray-300 truncate">{student.address || '-'}</td>
+                    <td className="py-2 px-2 text-center border border-gray-300">
+                      <div className="flex justify-center space-x-1">
                         <button
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
+                          className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
                           onClick={() => showEditModal(student)}
                         >
-                          <Edit className="mr-1 h-4 w-4" />
+                          <Edit className="mr-0.5 h-2.5 w-2.5" />
                           수정
                         </button>
                         <button 
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300"
+                          className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300"
                           onClick={() => {
                             if (window.confirm('정말 삭제하시겠습니까?')) {
                               handleDelete(student.id);
                             }
                           }}
                         >
-                          <Trash2 className="mr-1 h-4 w-4" />
+                          <Trash2 className="mr-0.5 h-2.5 w-2.5" />
                           삭제
                         </button>
                       </div>
@@ -494,202 +407,13 @@ export default function StudentManagement() {
         </>
       )}
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
-          <div className="relative bg-white rounded-lg shadow dark:bg-gray-700 w-full max-w-2xl">
-            {/* Modal header */}
-            <div className="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {editingId ? "학생 정보 수정" : "학생 등록"}
-              </h3>
-              <button
-                type="button"
-                className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                onClick={handleCancel}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            {/* Modal body */}
-            <div className="p-6 space-y-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    이름
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="이름을 입력하세요"
-                    value={formData.name || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="schoolName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    학교명
-                  </label>
-                  <input
-                    id="schoolName"
-                    name="schoolName"
-                    type="text"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="학교명을 입력하세요"
-                    value={formData.schoolName || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="schoolType" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    학교 유형
-                  </label>
-                  <select
-                    id="schoolType"
-                    name="schoolType"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    value={formData.schoolType || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">학교 유형을 선택하세요</option>
-                    <option value="elementary">초등학교</option>
-                    <option value="middle">중학교</option>
-                    <option value="high">고등학교</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="grade" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    학년
-                  </label>
-                  <select
-                    id="grade"
-                    name="grade"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    value={formData.grade || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">학년을 선택하세요</option>
-                    <option value="1">1학년</option>
-                    <option value="2">2학년</option>
-                    <option value="3">3학년</option>
-                    <option value="4">4학년</option>
-                    <option value="5">5학년</option>
-                    <option value="6">6학년</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="classNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    반
-                  </label>
-                  <input
-                    id="classNumber"
-                    name="classNumber"
-                    type="number"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="반을 입력하세요"
-                    value={formData.classNumber || ''}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="gender" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    성별
-                  </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    value={formData.gender || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">성별을 선택하세요</option>
-                    <option value="male">남</option>
-                    <option value="female">여</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="birthDate" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    생년월일
-                  </label>
-                  <input
-                    type="date"
-                    id="birthDate"
-                    name="birthDate"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    value={formData.birthDate ? moment(formData.birthDate).format('YYYY-MM-DD') : ''}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        handleDateChange(new Date(e.target.value));
-                      }
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="contactNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    연락처
-                  </label>
-                  <input
-                    id="contactNumber"
-                    name="contactNumber"
-                    type="text"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="연락처를 입력하세요"
-                    value={formData.contactNumber || ''}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="address" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    주소
-                  </label>
-                  <input
-                    id="address"
-                    name="address"
-                    type="text"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="주소를 입력하세요"
-                    value={formData.address || ''}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </form>
-            </div>
-            
-            {/* Modal footer */}
-            <div className="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
-              <button 
-                type="button"
-                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-                onClick={handleSubmit}
-              >
-                {editingId ? "수정" : "등록"}
-              </button>
-              <button 
-                type="button"
-                className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5"
-                onClick={handleCancel}
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StudentAddModal
+        isOpen={isModalOpen}
+        onClose={handleCancel}
+        onSubmit={handleSubmit}
+        editingId={editingId}
+        initialData={formData}
+      />
     </Layout>
   )
 } 
