@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -10,24 +10,31 @@ import {
   BookOpen, 
   Users, 
   MessageSquare, 
-  ClipboardCheck, 
   Settings,
-  LineChart 
+  LineChart,
+  Database,
+  ChevronDown,
+  ChevronRight,
+  Stethoscope
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const [isDataManagementOpen, setIsDataManagementOpen] = useState(true);
 
   const menuItems = [
     { name: '홈', path: '/', icon: Home },
     { name: '일정관리', path: '/schedule', icon: Calendar },
     { name: '건강관리', path: '/health', icon: Heart },
     { name: '교육자료', path: '/education', icon: BookOpen },
-    { name: '대상자관리', path: '/students', icon: Users },
-    { name: '성장 데이터', path: '/growth', icon: LineChart },
     { name: '메시지관리', path: '/messages', icon: MessageSquare },
-    { name: '검진관리', path: '/checkups', icon: ClipboardCheck },
     { name: '설정', path: '/settings', icon: Settings }
+  ];
+
+  const dataManagementItems = [
+    { name: '학생관리', path: '/students', icon: Users },
+    { name: '성장관리', path: '/growth', icon: LineChart },
+    { name: '검진관리', path: '/health-checkups', icon: Stethoscope }
   ];
 
   return (
@@ -58,6 +65,44 @@ const Sidebar: React.FC = () => {
               </li>
             );
           })}
+
+          {/* 데이터 관리 메뉴 */}
+          <li>
+            <button
+              onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
+              className="w-full flex items-center p-3 rounded-md hover:bg-gray-800 transition-colors"
+            >
+              <Database className="mr-3 h-5 w-5" />
+              <span>데이터 관리</span>
+              {isDataManagementOpen ? (
+                <ChevronDown className="ml-auto h-4 w-4" />
+              ) : (
+                <ChevronRight className="ml-auto h-4 w-4" />
+              )}
+            </button>
+            {isDataManagementOpen && (
+              <ul className="mt-2 ml-4 space-y-2">
+                {dataManagementItems.map((item) => {
+                  const isActive = pathname === item.path;
+                  const Icon = item.icon;
+                  
+                  return (
+                    <li key={item.path}>
+                      <Link 
+                        href={item.path}
+                        className={`flex items-center p-2 rounded-md hover:bg-gray-800 transition-colors ${
+                          isActive ? 'bg-gray-800' : ''
+                        }`}
+                      >
+                        <Icon className="mr-3 h-4 w-4" />
+                        <span className="text-sm">{item.name}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
         </ul>
       </nav>
     </div>
