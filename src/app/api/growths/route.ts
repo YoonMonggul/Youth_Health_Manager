@@ -1,22 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AppDataSource } from '@/database/data-source';
+import { AppDataSource, initializeDatabase } from '@/database/data-source';
 import { Growth } from '@/models/Growth';
 import { Student } from '@/models/Student';
 
 // GET: 성장 데이터 목록 조회
 export async function GET(request: NextRequest) {
   try {
+    // 데이터베이스 초기화 추가
+    await initializeDatabase();
+    
     const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get('page')) || 1;
     const limit = Number(searchParams.get('limit')) || 10;
     const searchTerm = searchParams.get('searchTerm');
     const grade = searchParams.get('grade');
+    const studentId = searchParams.get('studentId');
 
     const growthRepository = AppDataSource.getRepository(Growth);
     const queryBuilder = growthRepository
       .createQueryBuilder('growth')
       .leftJoinAndSelect('growth.student', 'student')
       .orderBy('growth.measurementDate', 'DESC');
+
+    // 학생 ID로 필터링
+    if (studentId) {
+      queryBuilder.andWhere('growth.studentId = :studentId', { studentId: parseInt(studentId) });
+    }
 
     // 검색어가 있는 경우
     if (searchTerm) {
@@ -54,6 +63,8 @@ export async function GET(request: NextRequest) {
 // POST: 성장 데이터 등록
 export async function POST(request: NextRequest) {
   try {
+    await initializeDatabase();
+    
     const body = await request.json();
     const growthRepository = AppDataSource.getRepository(Growth);
     const studentRepository = AppDataSource.getRepository(Student);
@@ -90,6 +101,8 @@ export async function POST(request: NextRequest) {
 // PUT: 성장 데이터 수정
 export async function PUT(request: NextRequest) {
   try {
+    await initializeDatabase();
+    
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const body = await request.json();
@@ -124,6 +137,8 @@ export async function PUT(request: NextRequest) {
 // DELETE: 성장 데이터 삭제
 export async function DELETE(request: NextRequest) {
   try {
+    await initializeDatabase();
+    
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     

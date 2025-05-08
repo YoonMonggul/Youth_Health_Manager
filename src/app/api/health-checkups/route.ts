@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const searchTerm = searchParams.get('searchTerm');
     const grade = searchParams.get('grade');
+    const studentId = searchParams.get('studentId');
 
     const skip = (page - 1) * limit;
 
@@ -24,6 +25,11 @@ export async function GET(req: NextRequest) {
       .addOrderBy('student.classNumber', 'ASC')
       .addOrderBy('student.studentNumber', 'ASC')
       .addOrderBy('health.checkupDate', 'DESC');
+
+    // 학생 ID로 필터링
+    if (studentId) {
+      queryBuilder.andWhere('health.studentId = :studentId', { studentId: parseInt(studentId) });
+    }
 
     if (searchTerm) {
       queryBuilder.andWhere('student.name LIKE :searchTerm', { searchTerm: `%${searchTerm}%` });

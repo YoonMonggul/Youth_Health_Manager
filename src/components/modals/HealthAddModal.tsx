@@ -73,7 +73,21 @@ export default function HealthAddModal({
     }
   }, [initialData]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // BMI 계산 함수
+  const calculateBMI = (height: number, weight: number): number => {
+    const heightInMeters = height / 100; // cm를 m로 변환
+    return weight / (heightInMeters * heightInMeters);
+  };
+
+  // 키나 몸무게가 변경될 때 BMI 자동 계산
+  React.useEffect(() => {
+    if (formData.height && formData.weight) {
+      const bmi = calculateBMI(Number(formData.height), Number(formData.weight));
+      setFormData(prev => ({ ...prev, bmi: parseFloat(bmi.toFixed(2)) }));
+    }
+  }, [formData.height, formData.weight]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -106,6 +120,12 @@ export default function HealthAddModal({
       return;
     }
 
+    // BMI 값이 없는 경우 자동 계산
+    if (!formData.bmi && formData.height && formData.weight) {
+      const bmi = calculateBMI(Number(formData.height), Number(formData.weight));
+      formData.bmi = parseFloat(bmi.toFixed(2));
+    }
+
     const submitData = {
       ...formData,
       studentId: selectedStudent?.id
@@ -126,7 +146,7 @@ export default function HealthAddModal({
       <div className="relative bg-white rounded-lg shadow dark:bg-gray-700 w-full max-w-3xl mx-4 pointer-events-auto">
         <div className="flex items-start justify-between p-3 border-b rounded-t dark:border-gray-600">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {editingId ? '검진 데이터 수정' : '검진 데이터 등록'}
+            {editingId ? '건강검진 데이터 수정' : '건강검진 데이터 등록'}
           </h3>
           <button
             type="button"
@@ -204,7 +224,7 @@ export default function HealthAddModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label htmlFor="height" className="block mb-1 text-xs font-medium text-gray-900 dark:text-white">
                 키 (cm)
@@ -236,6 +256,22 @@ export default function HealthAddModal({
                 value={formData.weight || ''}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="bmi" className="block mb-1 text-xs font-medium text-gray-900 dark:text-white">
+                BMI (kg/m²)
+              </label>
+              <input
+                id="bmi"
+                name="bmi"
+                type="number"
+                step="0.01"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                placeholder="BMI가 자동 계산됩니다"
+                value={formData.bmi || ''}
+                readOnly
               />
             </div>
 
@@ -327,9 +363,9 @@ export default function HealthAddModal({
                 검진일자
               </label>
               <input
-                type="date"
                 id="checkupDate"
                 name="checkupDate"
+                type="date"
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
                 value={formData.checkupDate ? moment(formData.checkupDate).format('YYYY-MM-DD') : ''}
                 onChange={handleInputChange}

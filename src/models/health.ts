@@ -11,6 +11,9 @@ export class Health {
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   weight: number; // 몸무게 (kg)
+  
+  @Column({ type: 'decimal', precision: 4, scale: 2, nullable: true })
+  bmi: number; // BMI (kg/m²)
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   waistCircumference: number; // 허리둘레 (cm)
