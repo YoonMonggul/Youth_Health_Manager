@@ -15,9 +15,6 @@ type ClassInfo = {
 };
 
 export default function HealthIndividual() {
-  // 탭 상태
-  const [activeTab, setActiveTab] = useState<'대상자' | '기본정보'>('기본정보');
-  
   // 학생 목록 상태
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -112,15 +109,16 @@ export default function HealthIndividual() {
   const fetchGrowthData = async (studentId: number) => {
     try {
       setLoadingGrowth(true);
-      console.log(`성장 데이터 요청 URL: /api/growths?studentId=${studentId}`);
-      const response = await fetch(`/api/growths?studentId=${studentId}`);
+      console.log(`성장 데이터 요청 URL: /api/growths?studentId=${studentId}&limit=5&sort=measurementDate,desc`);
+      const response = await fetch(`/api/growths?studentId=${studentId}&limit=5&sort=measurementDate,desc`);
       if (!response.ok) {
         throw new Error('성장 데이터를 가져오는데 실패했습니다.');
       }
       
       const data = await response.json();
       console.log(`학생 ID ${studentId}의 성장 데이터:`, data.items);
-      setGrowthData(data.items || []);
+      // 날짜 오름차순으로 정렬하여 그래프에서 왼쪽에서 오른쪽으로 시간 순서 표현
+      setGrowthData(data.items ? [...data.items].reverse() : []);
     } catch (error) {
       console.error('성장 데이터 로딩 오류:', error);
       setGrowthData([]);
@@ -305,31 +303,6 @@ export default function HealthIndividual() {
         
         {/* 오른쪽 상세 정보 패널 */}
         <div className="flex-1 flex flex-col">
-          {/* 탭 네비게이션 */}
-          <div className="flex border-b border-gray-200">
-            <button
-              className={`px-6 py-3 text-sm font-medium ${activeTab === '대상자' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-              onClick={() => setActiveTab('대상자')}
-            >
-              대상자
-            </button>
-            <button
-              className={`px-6 py-3 text-sm font-medium ${activeTab === '기본정보' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-              onClick={() => setActiveTab('기본정보')}
-            >
-              기본정보
-            </button>
-            <div className="ml-auto px-4 flex space-x-2">
-              <button 
-                className="px-3 py-1 text-xs text-white bg-blue-500 rounded hover:bg-blue-600"
-                onClick={() => selectedStudent && handleStudentSelect(selectedStudent)}
-              >
-                새로고침
-              </button>
-              <button className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100">내가 본</button>
-            </div>
-          </div>
-          
           {selectedStudent ? (
             <div className="flex-1 overflow-y-auto p-4">
               {/* 기본 정보 패널 */}
@@ -539,7 +512,7 @@ export default function HealthIndividual() {
                     <div className="grid grid-cols-3 gap-4 p-4">
                       {/* 키 측정 그래프 */}
                       <div>
-                        <h4 className="text-sm font-medium mb-2">키 측정</h4>
+                        <h4 className="text-sm font-medium mb-2">키 측정 (cm)</h4>
                         <div className="bg-gray-50 h-48 rounded">
                           <svg width="100%" height="100%" viewBox="0 0 250 180" preserveAspectRatio="none">
                             <g transform="translate(30, 20)">
@@ -549,26 +522,82 @@ export default function HealthIndividual() {
                               <line x1="0" y1="140" x2="200" y2="140" stroke="#e5e7eb" strokeWidth="1" />
                               
                               {/* 그래프 선 */}
-                              <path 
-                                d="M0,120 L20,110 L40,105 L60,95 L80,90 L100,85 L120,80 L140,75 L160,70 L180,72 L200,75" 
-                                fill="none" 
-                                stroke="#3b82f6" 
-                                strokeWidth="2" 
-                              />
+                              {growthData.length >= 2 && (
+                                <path 
+                                  d={`M${growthData.map((data, index) => {
+                                    // X 좌표 간격 계산 (데이터 포인트 수에 따라 동적 조정)
+                                    const xStep = 200 / (growthData.length - 1);
+                                    const x = index * xStep;
+                                    
+                                    // Y 좌표 계산 (키 값 정규화)
+                                    // 최대값과 최소값 찾기
+                                    const heights = growthData.map(d => Number(d.height));
+                                    const maxHeight = Math.max(...heights);
+                                    const minHeight = Math.min(...heights);
+                                    const range = maxHeight - minHeight || 1; // 0으로 나누기 방지
+                                    const padding = range * 0.1; // 10% 패딩
+                                    
+                                    // 정규화된 Y 좌표 (위에서부터 아래로 증가하므로 140에서 빼줌)
+                                    const normalizedHeight = (Number(data.height) - minHeight + padding) / (range + padding * 2);
+                                    const y = 140 - (normalizedHeight * 120); // 120은 그래프 높이(140에서 상하 여백 빼기)
+                                    
+                                    return `${index === 0 ? 'M' : 'L'}${x},${y}`;
+                                  }).join(' ')}`}
+                                  fill="none" 
+                                  stroke="#3b82f6" 
+                                  strokeWidth="2" 
+                                />
+                              )}
                               
                               {/* 포인트 */}
-                              {[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200].map((x, i) => {
-                                const y = [120, 110, 105, 95, 90, 85, 80, 75, 70, 72, 75][i];
+                              {growthData.map((data, index) => {
+                                // X 좌표 간격 계산
+                                const xStep = 200 / (growthData.length > 1 ? growthData.length - 1 : 1);
+                                const x = index * xStep;
+                                
+                                // Y 좌표 계산 (키 값 정규화)
+                                const heights = growthData.map(d => Number(d.height));
+                                const maxHeight = Math.max(...heights);
+                                const minHeight = Math.min(...heights);
+                                const range = maxHeight - minHeight || 1;
+                                const padding = range * 0.1;
+                                
+                                const normalizedHeight = (Number(data.height) - minHeight + padding) / (range + padding * 2);
+                                const y = 140 - (normalizedHeight * 120);
+                                
+                                // 날짜 포맷팅
+                                const date = new Date(data.measurementDate);
+                                const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                                
                                 return (
-                                  <circle 
-                                    key={i} 
-                                    cx={x} 
-                                    cy={y} 
-                                    r="3" 
-                                    fill="white" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth="1" 
-                                  />
+                                  <g key={index}>
+                                    <circle 
+                                      cx={x} 
+                                      cy={y} 
+                                      r="3" 
+                                      fill="white" 
+                                      stroke="#3b82f6" 
+                                      strokeWidth="1" 
+                                    />
+                                    <text 
+                                      x={x} 
+                                      y={160} 
+                                      textAnchor="middle" 
+                                      fontSize="8"
+                                      fill="#666"
+                                    >
+                                      {formattedDate}
+                                    </text>
+                                    <text 
+                                      x={x} 
+                                      y={y - 10} 
+                                      textAnchor="middle" 
+                                      fontSize="8"
+                                      fill="#3b82f6"
+                                    >
+                                      {Number(data.height).toFixed(1)}
+                                    </text>
+                                  </g>
                                 );
                               })}
                             </g>
@@ -578,7 +607,7 @@ export default function HealthIndividual() {
                       
                       {/* 몸무게 측정 그래프 */}
                       <div>
-                        <h4 className="text-sm font-medium mb-2">몸무게 측정</h4>
+                        <h4 className="text-sm font-medium mb-2">몸무게 측정 (kg)</h4>
                         <div className="bg-gray-50 h-48 rounded">
                           <svg width="100%" height="100%" viewBox="0 0 250 180" preserveAspectRatio="none">
                             <g transform="translate(30, 20)">
@@ -588,26 +617,75 @@ export default function HealthIndividual() {
                               <line x1="0" y1="140" x2="200" y2="140" stroke="#e5e7eb" strokeWidth="1" />
                               
                               {/* 그래프 선 */}
-                              <path 
-                                d="M0,100 L20,95 L40,90 L60,85 L80,80 L100,75 L120,80 L140,75 L160,70 L180,72 L200,74" 
-                                fill="none" 
-                                stroke="#3b82f6" 
-                                strokeWidth="2" 
-                              />
+                              {growthData.length >= 2 && (
+                                <path 
+                                  d={`M${growthData.map((data, index) => {
+                                    const xStep = 200 / (growthData.length - 1);
+                                    const x = index * xStep;
+                                    
+                                    const weights = growthData.map(d => Number(d.weight));
+                                    const maxWeight = Math.max(...weights);
+                                    const minWeight = Math.min(...weights);
+                                    const range = maxWeight - minWeight || 1;
+                                    const padding = range * 0.1;
+                                    
+                                    const normalizedWeight = (Number(data.weight) - minWeight + padding) / (range + padding * 2);
+                                    const y = 140 - (normalizedWeight * 120);
+                                    
+                                    return `${index === 0 ? 'M' : 'L'}${x},${y}`;
+                                  }).join(' ')}`}
+                                  fill="none" 
+                                  stroke="#3b82f6" 
+                                  strokeWidth="2" 
+                                />
+                              )}
                               
                               {/* 포인트 */}
-                              {[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200].map((x, i) => {
-                                const y = [100, 95, 90, 85, 80, 75, 80, 75, 70, 72, 74][i];
+                              {growthData.map((data, index) => {
+                                const xStep = 200 / (growthData.length > 1 ? growthData.length - 1 : 1);
+                                const x = index * xStep;
+                                
+                                const weights = growthData.map(d => Number(d.weight));
+                                const maxWeight = Math.max(...weights);
+                                const minWeight = Math.min(...weights);
+                                const range = maxWeight - minWeight || 1;
+                                const padding = range * 0.1;
+                                
+                                const normalizedWeight = (Number(data.weight) - minWeight + padding) / (range + padding * 2);
+                                const y = 140 - (normalizedWeight * 120);
+                                
+                                const date = new Date(data.measurementDate);
+                                const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                                
                                 return (
-                                  <circle 
-                                    key={i} 
-                                    cx={x} 
-                                    cy={y} 
-                                    r="3" 
-                                    fill="white" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth="1" 
-                                  />
+                                  <g key={index}>
+                                    <circle 
+                                      cx={x} 
+                                      cy={y} 
+                                      r="3" 
+                                      fill="white" 
+                                      stroke="#3b82f6" 
+                                      strokeWidth="1" 
+                                    />
+                                    <text 
+                                      x={x} 
+                                      y={160} 
+                                      textAnchor="middle" 
+                                      fontSize="8"
+                                      fill="#666"
+                                    >
+                                      {formattedDate}
+                                    </text>
+                                    <text 
+                                      x={x} 
+                                      y={y - 10} 
+                                      textAnchor="middle" 
+                                      fontSize="8"
+                                      fill="#3b82f6"
+                                    >
+                                      {Number(data.weight).toFixed(1)}
+                                    </text>
+                                  </g>
                                 );
                               })}
                             </g>
@@ -617,7 +695,7 @@ export default function HealthIndividual() {
                       
                       {/* 허리둘레 그래프 */}
                       <div>
-                        <h4 className="text-sm font-medium mb-2">허리둘레</h4>
+                        <h4 className="text-sm font-medium mb-2">허리둘레 (cm)</h4>
                         <div className="bg-gray-50 h-48 rounded">
                           <svg width="100%" height="100%" viewBox="0 0 250 180" preserveAspectRatio="none">
                             <g transform="translate(30, 20)">
@@ -626,29 +704,89 @@ export default function HealthIndividual() {
                               {/* X축 */}
                               <line x1="0" y1="140" x2="200" y2="140" stroke="#e5e7eb" strokeWidth="1" />
                               
-                              {/* 그래프 선 */}
-                              <path 
-                                d="M0,80 L20,82 L40,79 L60,80 L80,75 L100,76 L120,72 L140,70 L160,68 L180,67 L200,65" 
-                                fill="none" 
-                                stroke="#3b82f6" 
-                                strokeWidth="2" 
-                              />
+                              {/* 그래프 선 - 허리둘레가 있는 데이터만 포함 */}
+                              {growthData.filter(data => data.waistCircumference).length >= 2 && (
+                                <path 
+                                  d={`M${growthData
+                                    .filter(data => data.waistCircumference)
+                                    .map((data, index, filteredArray) => {
+                                      const xStep = 200 / (filteredArray.length - 1);
+                                      const x = index * xStep;
+                                      
+                                      const waists = filteredArray.map(d => Number(d.waistCircumference));
+                                      const maxWaist = Math.max(...waists);
+                                      const minWaist = Math.min(...waists);
+                                      const range = maxWaist - minWaist || 1;
+                                      const padding = range * 0.1;
+                                      
+                                      const normalizedWaist = (Number(data.waistCircumference) - minWaist + padding) / (range + padding * 2);
+                                      const y = 140 - (normalizedWaist * 120);
+                                      
+                                      return `${index === 0 ? 'M' : 'L'}${x},${y}`;
+                                    }).join(' ')}`}
+                                  fill="none" 
+                                  stroke="#3b82f6" 
+                                  strokeWidth="2" 
+                                />
+                              )}
                               
-                              {/* 포인트 */}
-                              {[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200].map((x, i) => {
-                                const y = [80, 82, 79, 80, 75, 76, 72, 70, 68, 67, 65][i];
-                                return (
-                                  <circle 
-                                    key={i} 
-                                    cx={x} 
-                                    cy={y} 
-                                    r="3" 
-                                    fill="white" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth="1" 
-                                  />
-                                );
-                              })}
+                              {/* 포인트 - 허리둘레가 있는 데이터만 표시 */}
+                              {growthData
+                                .filter(data => data.waistCircumference)
+                                .map((data, index, filteredArray) => {
+                                  const xStep = 200 / (filteredArray.length > 1 ? filteredArray.length - 1 : 1);
+                                  const x = index * xStep;
+                                  
+                                  const waists = filteredArray.map(d => Number(d.waistCircumference));
+                                  const maxWaist = Math.max(...waists);
+                                  const minWaist = Math.min(...waists);
+                                  const range = maxWaist - minWaist || 1;
+                                  const padding = range * 0.1;
+                                  
+                                  const normalizedWaist = (Number(data.waistCircumference) - minWaist + padding) / (range + padding * 2);
+                                  const y = 140 - (normalizedWaist * 120);
+                                  
+                                  const date = new Date(data.measurementDate);
+                                  const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                                  
+                                  return (
+                                    <g key={index}>
+                                      <circle 
+                                        cx={x} 
+                                        cy={y} 
+                                        r="3" 
+                                        fill="white" 
+                                        stroke="#3b82f6" 
+                                        strokeWidth="1" 
+                                      />
+                                      <text 
+                                        x={x} 
+                                        y={160} 
+                                        textAnchor="middle" 
+                                        fontSize="8"
+                                        fill="#666"
+                                      >
+                                        {formattedDate}
+                                      </text>
+                                      <text 
+                                        x={x} 
+                                        y={y - 10} 
+                                        textAnchor="middle" 
+                                        fontSize="8"
+                                        fill="#3b82f6"
+                                      >
+                                        {Number(data.waistCircumference).toFixed(1)}
+                                      </text>
+                                    </g>
+                                  );
+                                })}
+                              
+                              {/* 허리둘레 데이터가 없는 경우 메시지 */}
+                              {growthData.filter(data => data.waistCircumference).length === 0 && (
+                                <text x="100" y="70" textAnchor="middle" fontSize="12" fill="#666">
+                                  허리둘레 데이터가 없습니다
+                                </text>
+                              )}
                             </g>
                           </svg>
                         </div>
@@ -659,13 +797,6 @@ export default function HealthIndividual() {
                       <p>이 학생에 대한 성장 기록이 없습니다.</p>
                     </div>
                   )}
-                </div>
-                
-                {/* 메시지 보내기 버튼 */}
-                <div className="col-span-12 flex justify-end">
-                  <button className="bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-950">
-                    메시지 보내기
-                  </button>
                 </div>
               </div>
             </div>
