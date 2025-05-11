@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Stethoscope,
   UserCircle,
-  Users2
+  Users2,
+  BarChart
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -28,12 +29,11 @@ const Sidebar: React.FC = () => {
     { name: '홈', path: '/', icon: Home },
     { name: '일정관리', path: '/schedule', icon: Calendar },
     { name: '교육자료', path: '/education', icon: BookOpen },
-    { name: '설정', path: '/settings', icon: Settings }
   ];
 
   const healthManagementItems = [
     { name: '개별관리', path: '/health/individual', icon: UserCircle },
-    { name: '그룹관리', path: '/health/group', icon: Users2 }
+    { name: '그룹관리', path: '/health/group', icon: Users2, dev: true }
   ];
 
   const dataManagementItems = [
@@ -103,6 +103,9 @@ const Sidebar: React.FC = () => {
                       >
                         <Icon className="mr-3 h-4 w-4" />
                         <span className="text-sm">{item.name}</span>
+                        {item.dev && (
+                          <span className="ml-1 text-xs text-gray-400">(개발중)</span>
+                        )}
                       </Link>
                     </li>
                   );
@@ -148,8 +151,35 @@ const Sidebar: React.FC = () => {
               </ul>
             )}
           </li>
+
+          {/* 분석리포트 버튼 */}
+          <li>
+            <button
+              className="w-full flex items-center p-3 rounded-md hover:bg-gray-800 transition-colors opacity-50 cursor-not-allowed"
+              disabled
+            >
+              <BarChart className="mr-3 h-5 w-5" />
+              <div className="flex flex-col">
+                <span>분석리포트</span>
+                <span className="text-xs text-gray-400">(개발중)</span>
+              </div>
+            </button>
+          </li>
         </ul>
       </nav>
+
+      {/* 설정 메뉴 - 하단에 고정 */}
+      <div className="mt-auto pt-4 border-t border-gray-700">
+        <Link 
+          href="/settings"
+          className={`flex items-center p-3 rounded-md hover:bg-gray-800 transition-colors ${
+            pathname === '/settings' ? 'bg-gray-800' : ''
+          }`}
+        >
+          <Settings className="mr-3 h-5 w-5" />
+          <span>설정</span>
+        </Link>
+      </div>
     </div>
   );
 };
