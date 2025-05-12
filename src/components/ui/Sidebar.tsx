@@ -46,8 +46,8 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-56 min-h-screen bg-gray-900 text-white p-4 flex flex-col">
       {/* 로고 영역 */}
-      <div className="p-4 mb-6 text-center">
-        <div className="relative w-full h-12">
+      <div className="mb-6 text-center">
+        <div className="relative w-full h-16">
           <Image
             src="/img/Ki&Fit_logo.png"
             alt="Ki&Fit Logo"
