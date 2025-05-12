@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { 
   Home, 
@@ -45,8 +46,16 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-56 min-h-screen bg-gray-900 text-white p-4 flex flex-col">
       {/* 로고 영역 */}
-      <div className="p-4 mb-6 border border-dashed border-gray-600 text-center">
-        <span className="text-xl font-bold">로고</span>
+      <div className="p-4 mb-6 text-center">
+        <div className="relative w-full h-12">
+          <Image
+            src="/img/Ki&Fit_logo.png"
+            alt="Ki&Fit Logo"
+            fill
+            style={{ objectFit: 'contain' }}
+            priority
+          />
+        </div>
       </div>
       
       {/* 네비게이션 메뉴 */}

@@ -233,6 +233,7 @@ export default function GrowthManagement() {
                 <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-24">몸무게(kg)</th>
                 <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-24">BMI</th>
                 <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-24">허리둘레(cm)</th>
+                <th scope="col" className="py-1.5 px-3 text-center border border-gray-300 w-28">측정일자</th>
                 <th scope="col" className="py-1.5 px-2 text-center border border-gray-300 w-28">관리</th>
               </tr>
             </thead>
@@ -250,6 +251,13 @@ export default function GrowthManagement() {
                   <td className="py-2 px-3 text-center border border-gray-300">{growth.weight}</td>
                   <td className="py-2 px-3 text-center border border-gray-300">{growth.bmi}</td>
                   <td className="py-2 px-3 text-center border border-gray-300">{growth.waistCircumference || '-'}</td>
+                  <td className="py-2 px-3 text-center border border-gray-300">
+                    {new Date(growth.measurementDate).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
+                  </td>
                   <td className="py-2 px-2 text-center border border-gray-300">
                     <div className="flex justify-center space-x-1">
                       <button
