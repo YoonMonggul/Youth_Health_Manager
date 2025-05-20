@@ -399,6 +399,13 @@ export default function HealthIndividual() {
                         
                         <div className="font-medium">주소</div>
                         <div className="col-span-3">{selectedStudent.address || '세종특별자치시 한누리대로 2154'}</div>
+
+                        <div className="font-medium">진행 프로그램</div>
+                        <div className="col-span-3">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            건강 프로그램
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
@@ -492,15 +499,15 @@ export default function HealthIndividual() {
                               <g transform="translate(40, 20)">
                                 {/* 키 데이터 박스 */}
                                 <rect x="5" y="10" width="120" height="60" rx="4" fill="white" stroke="#e5e7eb" />
-                                <text x="15" y="30" fontSize="14" fontWeight="bold" fill="#000000">
+                                <text x="15" y="32" fontSize="15" fontWeight="bold" fill="#000000">
                                   키 {Number(latestGrowth.height).toFixed(1)}cm
                                 </text>
-                                <text x="15" y="45" fontSize="11" fill="#666666">
+                                <text x="15" y="45" fontSize="12" fill="#666666">
                                   또래평균 {selectedStudent.gender === 'female' 
                                     ? femaleHeightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.height.toFixed(1)
                                     : maleHeightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.height.toFixed(1)}cm
                                 </text>
-                                <text x="15" y="55" fontSize="10" fill="#999999">
+                                <text x="15" y="55" fontSize="11" fill="#999999">
                                   측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                                 </text>
                                 
@@ -550,6 +557,8 @@ export default function HealthIndividual() {
                                     fill="none"
                                     stroke={selectedStudent.gender === 'female' ? "#ec4899" : "#3b82f6"}
                                     strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                   />
                                 )}
                                 
@@ -565,6 +574,18 @@ export default function HealthIndividual() {
                                       stroke="white"
                                       strokeWidth="2"
                                     />
+                                    
+                                    {/* 키 값 텍스트 표시 */}
+                                    <text
+                                      x={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
+                                      y={340 - ((Number(latestGrowth.height) - 100) / 80) * 340 - 12}
+                                      fontSize="12"
+                                      fontWeight="bold"
+                                      textAnchor="middle"
+                                      fill={selectedStudent.gender === 'female' ? "#ec4899" : "#3b82f6"}
+                                    >
+                                      {Number(latestGrowth.height).toFixed(1)}
+                                    </text>
                                     
                                     {/* 현재 위치 표시선 */}
                                     <line
@@ -602,13 +623,13 @@ export default function HealthIndividual() {
                               <g transform="translate(40, 20)">
                                 {/* 체중 데이터 박스 */}
                                 <rect x="5" y="10" width="120" height="60" rx="4" fill="white" stroke="#e5e7eb" />
-                                <text x="15" y="30" fontSize="14" fontWeight="bold" fill="#000000">
+                                <text x="15" y="32" fontSize="15" fontWeight="bold" fill="#000000">
                                   체중 {Number(latestGrowth.weight).toFixed(1)}kg
                                 </text>
-                                <text x="15" y="45" fontSize="11" fill="#666666">
+                                <text x="15" y="45" fontSize="12" fill="#666666">
                                   또래평균 {weightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.weight.toFixed(1)}kg
                                 </text>
-                                <text x="15" y="55" fontSize="10" fill="#999999">
+                                <text x="15" y="55" fontSize="11" fill="#999999">
                                   측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                                 </text>
                                 
@@ -631,13 +652,6 @@ export default function HealthIndividual() {
                                   </text>
                                 ))}
                                 
-                                {/* 그래프 구역 영역 - 3%~97% 구간 */}
-                                <path
-                                  d="M0,330 C40,320 80,310 120,290 S200,260 240,220 S280,180 320,150"
-                                  fill="#f0f9ff"
-                                  opacity="0.5"
-                                />
-                                
                                 {/* 체중 기본 데이터 경로 추가 */}
                                 <path
                                   d={weightData.map((point, i) => {
@@ -650,6 +664,8 @@ export default function HealthIndividual() {
                                   fill="none"
                                   stroke="#c084fc"
                                   strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
                                 />
                                 
                                 {/* 체중 그래프에서 현재 사용자 데이터 포인트 */}
