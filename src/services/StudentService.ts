@@ -1,6 +1,5 @@
 import { Student } from "../models/Student";
 import { User } from "../models/User";
-import { StudentTeacherRelation } from "../models/StudentTeacherRelation";
 import { AppDataSource } from "../database/data-source";
 
 // 통계 관련 인터페이스
@@ -13,45 +12,25 @@ export interface SchoolStatistics {
 export class StudentService {
   private studentRepository = AppDataSource.getRepository(Student);
   private userRepository = AppDataSource.getRepository(User);
-  private relationRepository = AppDataSource.getRepository(StudentTeacherRelation);
 
   /**
-   * 교사가 특정 학생을 관리할 권한이 있는지 확인
-   * @param teacherId 교사 ID
-   * @param studentId 학생 ID
+   * 사용자가 특정 학생을 관리할 권한이 있는지 확인
+   * @param userId 사용자 ID
    * @returns 권한 여부
    */
-  async canManageStudent(teacherId: number, studentId: number): Promise<boolean> {
+  async canManageStudent(userId: number): Promise<boolean> {
     try {
-      // 교사 정보 조회
-      const teacher = await this.userRepository.findOneBy({ id: teacherId });
-      if (!teacher) return false;
+      // 사용자 정보 조회
+      const user = await this.userRepository.findOneBy({ id: userId });
+      if (!user) return false;
 
-      // 보건교사는 모든 학생을 관리할 수 있음
-      if (teacher.role === 'health_teacher') {
+      // 관리자는 모든 학생을 관리할 수 있음
+      if (user.role === 'admin') {
         return true;
       }
 
-      // 담임교사는 자신의 학급 학생만 관리할 수 있음
-      if (teacher.role === 'teacher') {
-        // 현재 학년도 (실제 구현 시 적절히 가져와야 함)
-        const currentYear = new Date().getFullYear();
-        
-        // 학생-교사 관계 조회
-        const relation = await this.relationRepository.findOne({
-          where: {
-            teacherId,
-            studentId,
-            relationType: 'homeroom',
-            schoolYear: currentYear
-          }
-        });
-
-        return !!relation; // 관계가 존재하면 true
-      }
-
-      // 관리자는 모든 학생을 관리할 수 있음
-      if (teacher.role === 'admin') {
+      // 일반 사용자는 모든 학생을 조회할 수 있음
+      if (user.role === 'user') {
         return true;
       }
 
@@ -63,53 +42,20 @@ export class StudentService {
   }
 
   /**
-   * 특정 교사가 관리할 수 있는 모든 학생 조회
-   * @param teacherId 교사 ID
+   * 특정 사용자가 관리할 수 있는 모든 학생 조회
+   * @param userId 사용자 ID
    * @returns 학생 목록
    */
-  async getStudentsByTeacher(teacherId: number): Promise<Student[]> {
+  async getStudentsByUser(userId: number): Promise<Student[]> {
     try {
-      const teacher = await this.userRepository.findOneBy({ id: teacherId });
-      if (!teacher) return [];
+      const user = await this.userRepository.findOneBy({ id: userId });
+      if (!user) return [];
 
-      // 관리자나 보건교사는 모든 학생 조회 가능
-      if (teacher.role === 'admin' || teacher.role === 'health_teacher') {
-        return this.studentRepository.find({
-          where: { isActive: true },
-          order: { grade: 'ASC', classNumber: 'ASC', studentNumber: 'ASC' }
-        });
-      }
-
-      // 담임교사는 자신의 학급 학생만 조회 가능
-      if (teacher.role === 'teacher') {
-        const currentYear = new Date().getFullYear();
-        
-        // 교사가 담당하는 학생 관계 목록 조회
-        const relations = await this.relationRepository.find({
-          where: {
-            teacherId,
-            relationType: 'homeroom',
-            schoolYear: currentYear
-          },
-          relations: ['student']
-        });
-
-        // 학생 ID 목록 추출
-        const studentIds = relations.map(relation => relation.studentId);
-        
-        if (studentIds.length === 0) return [];
-
-        // 학생 정보 조회
-        return this.studentRepository.find({
-          where: {
-            id: { in: studentIds },
-            isActive: true
-          },
-          order: { grade: 'ASC', classNumber: 'ASC', studentNumber: 'ASC' }
-        });
-      }
-
-      return [];
+      // 모든 사용자는 모든 학생 조회 가능
+      return this.studentRepository.find({
+        where: { isActive: true },
+        order: { grade: 'ASC', classNumber: 'ASC', studentNumber: 'ASC' }
+      });
     } catch (error) {
       console.error('학생 목록 조회 중 오류 발생:', error);
       return [];

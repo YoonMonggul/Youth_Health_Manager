@@ -18,7 +18,8 @@ import {
   Stethoscope,
   UserCircle,
   Users2,
-  BarChart
+  BarChart,
+  BarChart2
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -40,7 +41,8 @@ const Sidebar: React.FC = () => {
   const dataManagementItems = [
     { name: '학생관리', path: '/students', icon: Users },
     { name: '성장관리', path: '/growth', icon: LineChart },
-    { name: '검진관리', path: '/health-checkups', icon: Stethoscope }
+    { name: '검진관리', path: '/health-checkups', icon: Stethoscope },
+    { name: '프로그램관리', path: '/student-program', icon: BarChart2 }
   ];
 
   return (

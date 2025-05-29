@@ -619,101 +619,108 @@ export default function HealthIndividual() {
                             
                           {/* 체중 그래프 */}
                           <div className="w-full mt-2">
-                            <svg width="100%" height="340" viewBox="0 0 400 400" preserveAspectRatio="none">
-                              <g transform="translate(40, 20)">
-                                {/* 체중 데이터 박스 */}
-                                <rect x="5" y="10" width="120" height="60" rx="4" fill="white" stroke="#e5e7eb" />
-                                <text x="15" y="32" fontSize="15" fontWeight="bold" fill="#000000">
-                                  체중 {Number(latestGrowth.weight).toFixed(1)}kg
-                                </text>
-                                <text x="15" y="45" fontSize="12" fill="#666666">
-                                  또래평균 {weightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.weight.toFixed(1)}kg
-                                </text>
-                                <text x="15" y="55" fontSize="11" fill="#999999">
-                                  측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                                </text>
-                                
-                                {/* Y축 선 */}
-                                <line x1="0" y1="0" x2="0" y2="340" stroke="#e5e7eb" strokeWidth="1.5" />
-                                {/* X축 선 */}
-                                <line x1="0" y1="340" x2="320" y2="340" stroke="#e5e7eb" strokeWidth="1.5" />
-                                
-                                {/* 날짜 x축 레이블 - 만 나이로 변경 */}
-                                {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((age, i) => (
-                                  <text 
-                                    key={i} 
-                                    x={i * 26.6} 
-                                    y="360" 
-                                    fontSize="11" 
-                                    textAnchor="middle"
-                                    fill="#666"
-                                  >
-                                    {age}
-                                  </text>
-                                ))}
-                                
-                                {/* 체중 기본 데이터 경로 추가 */}
-                                <path
-                                  d={weightData.map((point, i) => {
-                                    // 7세를 x=0, 18세를 x=320으로 스케일링
-                                    const x = ((point.age - 7) / 11) * 320;
-                                    // 20kg를 y=340, 70kg를 y=0으로 스케일링
-                                    const y = 340 - ((point.weight - 20) / 50) * 340;
-                                    return `${i === 0 ? 'M' : 'L'}${x},${y}`;
-                                  }).join(' ')}
-                                  fill="none"
-                                  stroke="#c084fc"
-                                  strokeWidth="2.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                
-                                {/* 체중 그래프에서 현재 사용자 데이터 포인트 */}
-                                {selectedStudent && latestGrowth && (
-                                  <>
-                                    {/* 현재 나이와 체중에 해당하는 데이터 포인트 */}
-                                    <circle
-                                      cx={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      cy={340 - ((Number(latestGrowth.weight) - 20) / 50) * 340}
-                                      r="6"
-                                      fill="#c084fc"
-                                      stroke="white"
-                                      strokeWidth="2"
-                                    />
-                                    
-                                    {/* 체중 값 텍스트 표시 */}
-                                    <text
-                                      x={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      y={340 - ((Number(latestGrowth.weight) - 20) / 50) * 340 - 12}
-                                      fontSize="12"
-                                      fontWeight="bold"
-                                      textAnchor="middle"
-                                      fill="#c084fc"
-                                    >
-                                      {Number(latestGrowth.weight).toFixed(1)}
+                            {/* y축 0~100kg로 맞춤 */}
+                            {(() => {
+                              const minWeight = 0;
+                              const maxWeight = 100;
+                              const graphHeight = 340;
+                              return (
+                                <svg width="100%" height={graphHeight} viewBox="0 0 400 400" preserveAspectRatio="none">
+                                  <g transform="translate(40, 20)">
+                                    {/* 체중 데이터 박스 */}
+                                    <rect x="5" y="10" width="120" height="60" rx="4" fill="white" stroke="#e5e7eb" />
+                                    <text x="15" y="32" fontSize="15" fontWeight="bold" fill="#000000">
+                                      체중 {Number(latestGrowth.weight).toFixed(1)}kg
+                                    </text>
+                                    <text x="15" y="45" fontSize="12" fill="#666666">
+                                      또래평균 {weightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.weight.toFixed(1)}kg
+                                    </text>
+                                    <text x="15" y="55" fontSize="11" fill="#999999">
+                                      측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                                     </text>
                                     
-                                    {/* 현재 위치 표시선 */}
-                                    <line
-                                      x1={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      y1={340 - ((Number(latestGrowth.weight) - 20) / 50) * 340}
-                                      x2={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      y2="340"
+                                    {/* Y축 선 */}
+                                    <line x1="0" y1="0" x2="0" y2={graphHeight} stroke="#e5e7eb" strokeWidth="1.5" />
+                                    {/* X축 선 */}
+                                    <line x1="0" y1={graphHeight} x2="320" y2={graphHeight} stroke="#e5e7eb" strokeWidth="1.5" />
+                                    
+                                    {/* 날짜 x축 레이블 - 만 나이로 변경 */}
+                                    {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((age, i) => (
+                                      <text 
+                                        key={i} 
+                                        x={i * 26.6} 
+                                        y={graphHeight + 20} 
+                                        fontSize="11" 
+                                        textAnchor="middle"
+                                        fill="#666"
+                                      >
+                                        {age}
+                                      </text>
+                                    ))}
+                                    
+                                    {/* 체중 기본 데이터 경로 수정 (0~100kg) */}
+                                    <path
+                                      d={weightData.map((point, i) => {
+                                        const x = ((point.age - 7) / 11) * 320;
+                                        const y = graphHeight - ((point.weight - minWeight) / (maxWeight - minWeight)) * graphHeight;
+                                        return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+                                      }).join(' ')}
+                                      fill="none"
                                       stroke="#c084fc"
-                                      strokeWidth="1.5"
-                                      strokeDasharray="4,4"
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
                                     />
-                                  </>
-                                )}
-                                
-                                {/* Y축 값 레이블 */}
-                                <text x="-10" y="0" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">70</text>
-                                <text x="-10" y="85" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">60</text>
-                                <text x="-10" y="170" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">50</text>
-                                <text x="-10" y="255" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">40</text>
-                                <text x="-10" y="340" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">30</text>
-                              </g>
-                            </svg>
+                                    
+                                    {/* 체중 그래프에서 현재 사용자 데이터 포인트 */}
+                                    {selectedStudent && latestGrowth && (
+                                      <>
+                                        {/* 현재 나이와 체중에 해당하는 데이터 포인트 */}
+                                        <circle
+                                          cx={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
+                                          cy={graphHeight - ((Number(latestGrowth.weight) - minWeight) / (maxWeight - minWeight)) * graphHeight}
+                                          r="6"
+                                          fill="#c084fc"
+                                          stroke="white"
+                                          strokeWidth="2"
+                                        />
+                                        
+                                        {/* 체중 값 텍스트 표시 */}
+                                        <text
+                                          x={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
+                                          y={graphHeight - ((Number(latestGrowth.weight) - minWeight) / (maxWeight - minWeight)) * graphHeight - 12}
+                                          fontSize="12"
+                                          fontWeight="bold"
+                                          textAnchor="middle"
+                                          fill="#c084fc"
+                                        >
+                                          {Number(latestGrowth.weight).toFixed(1)}
+                                        </text>
+                                        
+                                        {/* 현재 위치 표시선 */}
+                                        <line
+                                          x1={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
+                                          y1={graphHeight - ((Number(latestGrowth.weight) - minWeight) / (maxWeight - minWeight)) * graphHeight}
+                                          x2={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
+                                          y2={graphHeight}
+                                          stroke="#c084fc"
+                                          strokeWidth="1.5"
+                                          strokeDasharray="4,4"
+                                        />
+                                      </>
+                                    )}
+                                    
+                                    {/* Y축 값 레이블 (0~100, 20 단위) */}
+                                    <text x="-10" y="0" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">100</text>
+                                    <text x="-10" y={graphHeight * 0.2} fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">80</text>
+                                    <text x="-10" y={graphHeight * 0.4} fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">60</text>
+                                    <text x="-10" y={graphHeight * 0.6} fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">40</text>
+                                    <text x="-10" y={graphHeight * 0.8} fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">20</text>
+                                    <text x="-10" y={graphHeight} fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">0</text>
+                                  </g>
+                                </svg>
+                              );
+                            })()}
                           </div>
                         </div>
                       </>

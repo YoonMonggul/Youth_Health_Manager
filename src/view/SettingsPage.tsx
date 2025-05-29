@@ -8,7 +8,7 @@ interface UserData {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'teacher' | 'health_teacher';
+  role: 'admin' | 'user';
   schoolType: 'elementary' | 'middle' | 'high';
   schoolName: string;
   phoneNumber: string;
@@ -149,8 +149,7 @@ const SettingsPage: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="admin">관리자</option>
-                <option value="teacher">교사</option>
-                <option value="health_teacher">보건교사</option>
+                <option value="user">사용자</option>
               </select>
             </div>
 

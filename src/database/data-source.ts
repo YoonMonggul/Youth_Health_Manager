@@ -2,7 +2,6 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "../models/User";
 import { Student } from "../models/Student";
-import { StudentTeacherRelation } from "../models/StudentTeacherRelation";
 import { Growth } from "../models/Growth";
 import { Health } from "../models/health";
 import path from "path";
@@ -17,7 +16,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || "youth_health_manager",
   synchronize: process.env.NODE_ENV !== "production", // 개발 환경에서만 true로 설정
   logging: process.env.NODE_ENV !== "production",
-  entities: [User, Student, StudentTeacherRelation, Growth, Health], // Health 엔티티 추가
+  entities: [User, Student, Growth, Health], // StudentTeacherRelation 제거
   migrations: [path.join(__dirname, "../migrations/**/*.{ts,js}")],
   subscribers: [path.join(__dirname, "../subscribers/**/*.{ts,js}")],
 });

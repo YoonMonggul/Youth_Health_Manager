@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { StudentTeacherRelation } from './StudentTeacherRelation';
 import { Growth } from './Growth';
 import { Health } from './health';
 
@@ -59,10 +58,6 @@ export class Student {
 
   @Column({ default: true })
   isActive: boolean; // 현재 재학 중 여부
-
-  // 교사와의 관계 (다대다 관계를 위한 관계 테이블 사용)
-  @OneToMany(() => StudentTeacherRelation, relation => relation.student)
-  teacherRelations: StudentTeacherRelation[];
 
   // 성장 데이터와의 관계
   @OneToMany(() => Growth, growth => growth.student)

@@ -16,19 +16,10 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['admin', 'teacher', 'health_teacher'],
-    default: 'teacher'
+    enum: ['admin', 'user'],
+    default: 'user'
   })
-  role: 'admin' | 'teacher' | 'health_teacher';
-
-  @Column({
-    type: 'enum',
-    enum: ['elementary', 'middle', 'high']
-  })
-  schoolType: 'elementary' | 'middle' | 'high';
-
-  @Column({ length: 100 })
-  schoolName: string;
+  role: 'admin' | 'user';
 
   @Column({ length: 20 })
   phoneNumber: string;

@@ -13,11 +13,6 @@ interface StudentAddModalProps {
   initialData?: Partial<Student>;
 }
 
-interface UserData {
-  schoolName: string;
-  schoolType: 'elementary' | 'middle' | 'high';
-}
-
 export default function StudentAddModal({
   isOpen,
   onClose,
@@ -26,29 +21,6 @@ export default function StudentAddModal({
   initialData = {}
 }: StudentAddModalProps) {
   const [formData, setFormData] = React.useState<Partial<Student>>(initialData);
-
-  // 컴포넌트 마운트 시 또는 editingId 변경 시 학교 정보 설정
-  React.useEffect(() => {
-    if (!editingId) {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr) as UserData;
-          console.log('설정할 학교 정보:', {
-            schoolName: user.schoolName,
-            schoolType: user.schoolType
-          });
-          setFormData(prev => ({
-            ...prev,
-            schoolName: user.schoolName,
-            schoolType: user.schoolType as 'elementary' | 'middle' | 'high'
-          }));
-        } catch (error) {
-          console.error('사용자 정보 파싱 에러:', error);
-        }
-      }
-    }
-  }, [editingId]);
 
   // initialData가 변경될 때 formData 업데이트
   React.useEffect(() => {
@@ -150,6 +122,41 @@ export default function StudentAddModal({
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
                 placeholder="이름을 입력하세요"
                 value={formData.name || ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="schoolType" className="block mb-1 text-xs font-medium text-gray-900 dark:text-white">
+                학교 구분
+              </label>
+              <select
+                id="schoolType"
+                name="schoolType"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                value={formData.schoolType || ''}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">학교 구분 선택</option>
+                <option value="elementary">초등학교</option>
+                <option value="middle">중학교</option>
+                <option value="high">고등학교</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="schoolName" className="block mb-1 text-xs font-medium text-gray-900 dark:text-white">
+                학교 이름
+              </label>
+              <input
+                id="schoolName"
+                name="schoolName"
+                type="text"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                placeholder="학교명을 입력하세요"
+                value={formData.schoolName || ''}
                 onChange={handleInputChange}
                 required
               />
