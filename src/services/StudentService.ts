@@ -52,10 +52,10 @@ export class StudentService {
       if (!user) return [];
 
       // 모든 사용자는 모든 학생 조회 가능
-      return this.studentRepository.find({
-        where: { isActive: true },
-        order: { grade: 'ASC', classNumber: 'ASC', studentNumber: 'ASC' }
-      });
+        return this.studentRepository.find({
+          where: { isActive: true },
+          order: { grade: 'ASC', classNumber: 'ASC', studentNumber: 'ASC' }
+        });
     } catch (error) {
       console.error('학생 목록 조회 중 오류 발생:', error);
       return [];

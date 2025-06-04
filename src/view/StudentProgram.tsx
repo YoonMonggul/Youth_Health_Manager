@@ -9,20 +9,23 @@ export default function StudentProgram() {
   const [selectedTab, setSelectedTab] = useState(3); // 비만도 과체중 탭 활성화
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const summaryTabs = [
-    { label: "전체", value: "00명" },
-    { label: "자세불균형\n기초인식", value: "00명" },
-    { label: "자세불균형\n습관개선", value: "00명" },
-    { label: "비만도\n과체중", value: "00명" },
-    { label: "비만도\n비만", value: "00명" },
+    { label: "저체중", value: "00명" },
+    { label: "정상체중", value: "00명" },
+    { label: "과체중", value: "00명" },
+    { label: "비만", value: "00명" },
+    { label: "복부비만양호", value: "00명" },
+    { label: "복부비만주의", value: "00명" },
   ];
 
   // 화면 수정 드롭다운 상태 및 체크박스 상태
   const [editDropdownOpen, setEditDropdownOpen] = useState(false);
   const [programChecks, setProgramChecks] = useState({
-    자세불균형기초인식: true,
-    자세불균형습관개선: true,
-    비만도과체중: true,
-    비만도비만: true,
+    저체중: true,
+    정상체중: true,
+    과체중: true,
+    비만: true,
+    복부비만양호: true,
+    복부비만주의: true,
   });
   const editBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -44,7 +47,7 @@ export default function StudentProgram() {
           className="border rounded px-3 py-1 h-8 text-xs font-medium bg-white hover:bg-gray-50 shadow-sm"
           onClick={() => setEditDropdownOpen(v => !v)}
         >
-          화면 수정
+          프로그램 보기
         </button>
         {editDropdownOpen && (
           <div
@@ -220,6 +223,60 @@ export default function StudentProgram() {
       </div>
 
       <ProgramAddModal isOpen={isProgramModalOpen} onClose={() => setIsProgramModalOpen(false)} onSubmit={(data) => { alert('임시 등록: ' + JSON.stringify(data)); setIsProgramModalOpen(false); }} />
+
+      {/* 하단 BMI 변화율 추이 그래프 */}
+      <div className="max-w-3xl mx-auto mt-8 mb-12 bg-white rounded-lg shadow p-6">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-lg font-bold">BMI 변화율 추이</h3>
+          <span className="text-xs text-gray-500">최근 6주간 BMI 변화율(%)</span>
+        </div>
+        {/* 임의 데이터 */}
+        {(() => {
+          const bmiRates = [0, 2, 1, 3, 2.5, 4];
+          const maxRate = 5;
+          const width = 400;
+          const height = 160;
+          const leftPad = 40;
+          const bottomPad = 30;
+          const topPad = 20;
+          const graphW = width - leftPad - 20;
+          const graphH = height - topPad - bottomPad;
+          // 점 좌표 계산
+          const points = bmiRates.map((v, i) => {
+            const x = leftPad + (graphW / (bmiRates.length - 1)) * i;
+            const y = topPad + graphH - (v / maxRate) * graphH;
+            return [x, y];
+          });
+          // polyline points string
+          const polyline = points.map(([x, y]) => `${x},${y}`).join(' ');
+          return (
+            <svg width={width} height={height} className="w-full h-40">
+              {/* y축 */}
+              <line x1={leftPad} y1={topPad} x2={leftPad} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
+              {/* x축 */}
+              <line x1={leftPad} y1={topPad + graphH} x2={leftPad + graphW} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
+              {/* y축 레이블 */}
+              {[0, 1, 2, 3, 4, 5].map((v) => (
+                <text key={v} x={leftPad - 8} y={topPad + graphH - (v / maxRate) * graphH + 4} fontSize="11" textAnchor="end" fill="#888">{v}%</text>
+              ))}
+              {/* x축 레이블 */}
+              {bmiRates.map((_, i) => (
+                <text key={i} x={leftPad + (graphW / (bmiRates.length - 1)) * i} y={topPad + graphH + 18} fontSize="11" textAnchor="middle" fill="#888">{i + 1}주차</text>
+              ))}
+              {/* 선그래프 */}
+              <polyline points={polyline} fill="none" stroke="#38BDF8" strokeWidth="3" />
+              {/* 점 */}
+              {points.map(([x, y], i) => (
+                <circle key={i} cx={x} cy={y} r="5" fill="#38BDF8" stroke="#fff" strokeWidth="2" />
+              ))}
+              {/* 값 텍스트 */}
+              {points.map(([x, y], i) => (
+                <text key={i} x={x} y={y - 10} fontSize="12" textAnchor="middle" fill="#38BDF8">{bmiRates[i]}%</text>
+              ))}
+            </svg>
+          );
+        })()}
+      </div>
     </div>
   );
 } 
