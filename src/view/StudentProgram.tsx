@@ -3,11 +3,14 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import ProgramAddModal from '@/components/modals/ProgramAddModal';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ProgramStartModal from '@/components/modals/ProgramStartModal';
 
 export default function StudentProgram() {
   // 목업 데이터
   const [selectedTab, setSelectedTab] = useState(3); // 비만도 과체중 탭 활성화
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
+  const [isStartModalOpen, setIsStartModalOpen] = useState(false);
   const summaryTabs = [
     { label: "저체중", value: "00명" },
     { label: "정상체중", value: "00명" },
@@ -35,6 +38,25 @@ export default function StudentProgram() {
   function handleDropdownBlur(e: React.FocusEvent<HTMLDivElement>) {
     // 드롭다운 바깥 클릭 시 닫기
     if (!e.currentTarget.contains(e.relatedTarget)) setEditDropdownOpen(false);
+  }
+
+  // 캐러셀 상태: 1~6주차 (설명/메모용)
+  const [currentWeek, setCurrentWeek] = useState(0); // 0~5
+  const weekLabels = ['1주차', '2주차', '3주차', '4주차', '5주차', '6주차'];
+  // 예시 설명/메모 데이터 (실제 데이터로 교체)
+  const weekNotes = [
+    '1주차: 식습관 개선 교육',
+    '2주차: 운동 습관 만들기',
+    '3주차: 건강 체크',
+    '4주차: 스트레스 관리',
+    '5주차: 가족과 함께 실천',
+    '6주차: 마무리 및 평가',
+  ];
+  function prevWeek() {
+    setCurrentWeek((prev) => (prev > 0 ? prev - 1 : weekLabels.length - 1));
+  }
+  function nextWeek() {
+    setCurrentWeek((prev) => (prev < weekLabels.length - 1 ? prev + 1 : 0));
   }
 
   return (
@@ -129,14 +151,32 @@ export default function StudentProgram() {
               <div className="font-semibold text-base">프로그램 진행현황 및 참여율</div>
               <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">콘텐츠 상세보기</Button>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-center">
-                <div className="mb-1">
-                  <span className="bg-yellow-400 text-white text-xs px-2 py-0.5 rounded font-bold">진행중</span>
+            {/* 캐러셀+파이차트 flex row */}
+            <div className="flex flex-row items-center gap-6">
+              {/* 캐러셀: 주차별 설명/메모 */}
+              <div className="flex flex-col items-center min-w-[220px] max-w-[220px] h-24 justify-center">
+                <div className="flex items-center gap-2 mb-2 w-full justify-center">
+                  <button
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    onClick={prevWeek}
+                    aria-label="이전 주차"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <div className="flex flex-col items-center w-full">
+                    <div className="mb-1 font-bold text-lg break-keep">{weekLabels[currentWeek]}</div>
+                    <div className="text-xs text-gray-500 text-center break-words w-full">{weekNotes[currentWeek]}</div>
+                  </div>
+                  <button
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    onClick={nextWeek}
+                    aria-label="다음 주차"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
                 </div>
-                <div className="font-bold text-lg mb-1">3주차</div>
-                <div className="text-xs text-gray-500">과체중을 줄이는 방법, 식사 관리</div>
               </div>
+              {/* 파이 차트 6개는 항상 한 번에 보임 (기존 코드 유지) */}
               <div className="flex gap-4 flex-1 justify-end">
                 {[95, 80, 60, 0, 0, 0].map((v, i) => (
                   <div key={i} className="flex flex-col items-center">
@@ -164,34 +204,58 @@ export default function StudentProgram() {
 
         {/* 우측: 성별 현황, 기간별 참여, 운영 이력 */}
         <div className="col-span-4 flex flex-col gap-4">
-          {/* 프로그램 기간별 참여 현황 */}
+          {/* 변화율 추이 그래프 (BMI 등) */}
           <div className="bg-white rounded-lg shadow p-4 h-full flex flex-col justify-between">
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-semibold text-base">프로그램 기간별 참여 현황</div>
-              <select className="border rounded px-2 py-1 text-xs">
-                <option>일별</option>
-                <option>주별</option>
-              </select>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-lg font-bold">BMI 변화율 추이</h3>
+              <span className="text-xs text-gray-500">최근 6주간 BMI 변화율(%)</span>
             </div>
-            {/* 선그래프 목업 */}
-            <div className="flex-1 flex items-end">
-              <svg width="100%" height="120" viewBox="0 0 320 120">
-                <polyline
-                  fill="none"
-                  stroke="#38BDF8"
-                  strokeWidth="3"
-                  points="0,80 40,60 80,70 120,50 160,60 200,40 240,60 280,50 320,80"
-                />
-                {/* 점 */}
-                {[80, 60, 70, 50, 60, 40, 60, 50, 80].map((y, i) => (
-                  <circle key={i} cx={i*40} cy={y} r="4" fill="#38BDF8" stroke="#fff" strokeWidth="2" />
-                ))}
-                {/* x축 레이블 */}
-                {['10.10', '10.11', '10.12', '10.13', '10.14', '10.15', '10.16'].map((d, i) => (
-                  <text key={i} x={i*40+10} y={110} fontSize="11" fill="#888">{d}</text>
-                ))}
-              </svg>
-            </div>
+            {/* 임의 데이터 */}
+            {(() => {
+              const bmiRates = [0, 2, 1, 3, 2.5, 4];
+              const maxRate = 5;
+              const width = 400;
+              const height = 160;
+              const leftPad = 40;
+              const bottomPad = 30;
+              const topPad = 20;
+              const graphW = width - leftPad - 20;
+              const graphH = height - topPad - bottomPad;
+              // 점 좌표 계산
+              const points = bmiRates.map((v, i) => {
+                const x = leftPad + (graphW / (bmiRates.length - 1)) * i;
+                const y = topPad + graphH - (v / maxRate) * graphH;
+                return [x, y];
+              });
+              // polyline points string
+              const polyline = points.map(([x, y]) => `${x},${y}`).join(' ');
+              return (
+                <svg width={width} height={height} className="w-full h-40">
+                  {/* y축 */}
+                  <line x1={leftPad} y1={topPad} x2={leftPad} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
+                  {/* x축 */}
+                  <line x1={leftPad} y1={topPad + graphH} x2={leftPad + graphW} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
+                  {/* y축 레이블 */}
+                  {[0, 1, 2, 3, 4, 5].map((v) => (
+                    <text key={v} x={leftPad - 8} y={topPad + graphH - (v / maxRate) * graphH + 4} fontSize="11" textAnchor="end" fill="#888">{v}%</text>
+                  ))}
+                  {/* x축 레이블 */}
+                  {bmiRates.map((_, i) => (
+                    <text key={i} x={leftPad + (graphW / (bmiRates.length - 1)) * i} y={topPad + graphH + 18} fontSize="11" textAnchor="middle" fill="#888">{i + 1}주차</text>
+                  ))}
+                  {/* 선그래프 */}
+                  <polyline points={polyline} fill="none" stroke="#38BDF8" strokeWidth="3" />
+                  {/* 점 */}
+                  {points.map(([x, y], i) => (
+                    <circle key={i} cx={x} cy={y} r="5" fill="#38BDF8" stroke="#fff" strokeWidth="2" />
+                  ))}
+                  {/* 값 텍스트 */}
+                  {points.map(([x, y], i) => (
+                    <text key={i} x={x} y={y - 10} fontSize="12" textAnchor="middle" fill="#38BDF8">{bmiRates[i]}%</text>
+                  ))}
+                </svg>
+              );
+            })()}
           </div>
 
           {/* 프로그램 운영 이력 */}
@@ -217,66 +281,21 @@ export default function StudentProgram() {
         </div>
       </div>
 
-      {/* 우측 하단 메시지 보내기 버튼 */}
-      <div className="fixed bottom-8 right-8 z-50">
+      {/* 우측 하단 메시지 보내기/시작 버튼 */}
+      <div className="fixed bottom-8 right-8 z-50 flex flex-row gap-3">
         <Button className="bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg text-base font-bold" onClick={() => setIsProgramModalOpen(true)}>프로그램 추가</Button>
+        <Button className="bg-green-600 text-white px-6 py-3 rounded-full shadow-lg text-base font-bold" onClick={() => setIsStartModalOpen(true)}>프로그램 시작</Button>
       </div>
 
-      <ProgramAddModal isOpen={isProgramModalOpen} onClose={() => setIsProgramModalOpen(false)} onSubmit={(data) => { alert('임시 등록: ' + JSON.stringify(data)); setIsProgramModalOpen(false); }} />
-
-      {/* 하단 BMI 변화율 추이 그래프 */}
-      <div className="max-w-3xl mx-auto mt-8 mb-12 bg-white rounded-lg shadow p-6">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-lg font-bold">BMI 변화율 추이</h3>
-          <span className="text-xs text-gray-500">최근 6주간 BMI 변화율(%)</span>
-        </div>
-        {/* 임의 데이터 */}
-        {(() => {
-          const bmiRates = [0, 2, 1, 3, 2.5, 4];
-          const maxRate = 5;
-          const width = 400;
-          const height = 160;
-          const leftPad = 40;
-          const bottomPad = 30;
-          const topPad = 20;
-          const graphW = width - leftPad - 20;
-          const graphH = height - topPad - bottomPad;
-          // 점 좌표 계산
-          const points = bmiRates.map((v, i) => {
-            const x = leftPad + (graphW / (bmiRates.length - 1)) * i;
-            const y = topPad + graphH - (v / maxRate) * graphH;
-            return [x, y];
-          });
-          // polyline points string
-          const polyline = points.map(([x, y]) => `${x},${y}`).join(' ');
-          return (
-            <svg width={width} height={height} className="w-full h-40">
-              {/* y축 */}
-              <line x1={leftPad} y1={topPad} x2={leftPad} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
-              {/* x축 */}
-              <line x1={leftPad} y1={topPad + graphH} x2={leftPad + graphW} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
-              {/* y축 레이블 */}
-              {[0, 1, 2, 3, 4, 5].map((v) => (
-                <text key={v} x={leftPad - 8} y={topPad + graphH - (v / maxRate) * graphH + 4} fontSize="11" textAnchor="end" fill="#888">{v}%</text>
-              ))}
-              {/* x축 레이블 */}
-              {bmiRates.map((_, i) => (
-                <text key={i} x={leftPad + (graphW / (bmiRates.length - 1)) * i} y={topPad + graphH + 18} fontSize="11" textAnchor="middle" fill="#888">{i + 1}주차</text>
-              ))}
-              {/* 선그래프 */}
-              <polyline points={polyline} fill="none" stroke="#38BDF8" strokeWidth="3" />
-              {/* 점 */}
-              {points.map(([x, y], i) => (
-                <circle key={i} cx={x} cy={y} r="5" fill="#38BDF8" stroke="#fff" strokeWidth="2" />
-              ))}
-              {/* 값 텍스트 */}
-              {points.map(([x, y], i) => (
-                <text key={i} x={x} y={y - 10} fontSize="12" textAnchor="middle" fill="#38BDF8">{bmiRates[i]}%</text>
-              ))}
-            </svg>
-          );
-        })()}
-      </div>
+      <ProgramAddModal isOpen={isProgramModalOpen} onClose={() => setIsProgramModalOpen(false)} onSubmit={async (data) => { alert('임시 등록: ' + JSON.stringify(data)); setIsProgramModalOpen(false); }} editingId={null} />
+      <ProgramStartModal
+        isOpen={isStartModalOpen}
+        onClose={() => setIsStartModalOpen(false)}
+        onSubmit={async ({ programId, studentIds }) => {
+          alert(`프로그램ID: ${programId}, 학생ID: ${studentIds.join(', ')}`);
+          setIsStartModalOpen(false);
+        }}
+      />
     </div>
   );
 } 

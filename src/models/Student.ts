@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany } from 'typeorm';
 import { Growth } from './Growth';
 import { Health } from './health';
+import { Program } from './program';
 
 @Entity('students')
 export class Student {
@@ -66,6 +67,10 @@ export class Student {
   // 건강검진 데이터와의 관계
   @OneToMany(() => Health, (health: Health) => health.student)
   healthCheckups: Health[];
+
+  // 프로그램과의 다대다 관계
+  @ManyToMany(() => Program, program => program.students)
+  programs: Program[];
 
   @CreateDateColumn()
   createdAt: Date;

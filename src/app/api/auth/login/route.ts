@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'name', 'role', 'schoolType', 'schoolName']
+      select: ['id', 'email', 'password', 'name', 'role']
     });
     console.log('사용자 검색 결과:', user ? '사용자 찾음' : '사용자 없음');
 
@@ -62,10 +62,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 민감한 정보 제거
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
-    // JWT 토큰 생성
-    console.log('JWT 토큰 생성 시도');
+    // @ts-expect-error 타입스크립트 jwt.sign 오버로드 문제 무시
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       JWT_SECRET,

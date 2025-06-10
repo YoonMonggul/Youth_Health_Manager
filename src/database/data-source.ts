@@ -4,7 +4,9 @@ import { User } from "../models/User";
 import { Student } from "../models/Student";
 import { Growth } from "../models/Growth";
 import { Health } from "../models/health";
+import { Program } from "../models/program";
 import path from "path";
+import { seedPrograms } from './seedPrograms';
 
 // TypeORM 데이터 소스 설정
 export const AppDataSource = new DataSource({
@@ -16,7 +18,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || "youth_health_manager",
   synchronize: process.env.NODE_ENV !== "production", // 개발 환경에서만 true로 설정
   logging: process.env.NODE_ENV !== "production",
-  entities: [User, Student, Growth, Health], // StudentTeacherRelation 제거
+  entities: [User, Student, Growth, Health, Program], // StudentTeacherRelation 제거
   migrations: [path.join(__dirname, "../migrations/**/*.{ts,js}")],
   subscribers: [path.join(__dirname, "../subscribers/**/*.{ts,js}")],
 });
@@ -27,6 +29,8 @@ export const initializeDatabase = async () => {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
       console.log("데이터베이스 연결 성공");
+      // 프로그램 6종 seed 자동 실행
+      await seedPrograms();
     }
     return true;
   } catch (error) {

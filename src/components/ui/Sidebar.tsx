@@ -18,8 +18,7 @@ import {
   Stethoscope,
   UserCircle,
   Users2,
-  BarChart,
-  BarChart2
+  BarChart
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -35,14 +34,14 @@ const Sidebar: React.FC = () => {
 
   const healthManagementItems = [
     { name: '개별관리', path: '/health/individual', icon: UserCircle },
-    { name: '그룹관리', path: '/health/group', icon: Users2, dev: true }
+    { name: '그룹관리', path: '/student-program', icon: Users2 }
   ];
 
   const dataManagementItems = [
     { name: '학생관리', path: '/students', icon: Users },
     { name: '성장관리', path: '/growth', icon: LineChart },
     { name: '검진관리', path: '/health-checkups', icon: Stethoscope },
-    { name: '프로그램관리', path: '/student-program', icon: BarChart2 }
+    { name: '프로그램관리', path: '', icon: BarChart }
   ];
 
   return (
@@ -114,9 +113,6 @@ const Sidebar: React.FC = () => {
                       >
                         <Icon className="mr-3 h-4 w-4" />
                         <span className="text-sm">{item.name}</span>
-                        {item.dev && (
-                          <span className="ml-1 text-xs text-gray-400">(개발중)</span>
-                        )}
                       </Link>
                     </li>
                   );
@@ -144,7 +140,20 @@ const Sidebar: React.FC = () => {
                 {dataManagementItems.map((item) => {
                   const isActive = pathname === item.path;
                   const Icon = item.icon;
-                  
+                  if (item.name === '프로그램관리') {
+                    return (
+                      <li key={item.name}>
+                        <button
+                          type="button"
+                          className="flex items-center p-2 rounded-md opacity-50 cursor-not-allowed w-full"
+                          disabled
+                        >
+                          <Icon className="mr-3 h-4 w-4" />
+                          <span className="text-sm">{item.name}</span>
+                        </button>
+                      </li>
+                    );
+                  }
                   return (
                     <li key={item.path}>
                       <Link 
