@@ -5,6 +5,7 @@ import { Student } from "../models/Student";
 import { Growth } from "../models/Growth";
 import { Health } from "../models/health";
 import { Program } from "../models/program";
+import { ProgramStart } from "../models/ProgramStart";
 import path from "path";
 import { seedPrograms } from './seedPrograms';
 
@@ -18,7 +19,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || "youth_health_manager",
   synchronize: process.env.NODE_ENV !== "production", // 개발 환경에서만 true로 설정
   logging: process.env.NODE_ENV !== "production",
-  entities: [User, Student, Growth, Health, Program], // StudentTeacherRelation 제거
+  entities: [User, Student, Growth, Health, Program, ProgramStart], // StudentTeacherRelation 제거
   migrations: [path.join(__dirname, "../migrations/**/*.{ts,js}")],
   subscribers: [path.join(__dirname, "../subscribers/**/*.{ts,js}")],
 });

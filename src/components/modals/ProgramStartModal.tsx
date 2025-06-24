@@ -11,12 +11,13 @@ interface Student {
   grade: number;
   classNumber: number;
   studentNumber: number;
+  schoolType: string;
 }
 
 interface ProgramStartModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { programId: number; studentIds: number[] }) => Promise<void>;
+  onSubmit: (data: { programId: number; programName: string; studentIds: number[]; startDate: string; endDate: string }) => Promise<void>;
 }
 
 export default function ProgramStartModal({ isOpen, onClose, onSubmit }: ProgramStartModalProps) {
@@ -25,6 +26,9 @@ export default function ProgramStartModal({ isOpen, onClose, onSubmit }: Program
   const [selectedProgramId, setSelectedProgramId] = React.useState<number | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = React.useState<number[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [startDate, setStartDate] = React.useState('');
+  const [endDate, setEndDate] = React.useState('');
+  const [programName, setProgramName] = React.useState('');
 
   // 프로그램 목록 불러오기
   React.useEffect(() => {
@@ -37,7 +41,7 @@ export default function ProgramStartModal({ isOpen, onClose, onSubmit }: Program
   // 학생 목록 불러오기
   React.useEffect(() => {
     if (!isOpen) return;
-    fetch('/api/students')
+    fetch('/api/students?limit=9999')
       .then(res => res.json())
       .then(data => setStudents(data.students || []));
   }, [isOpen]);
@@ -52,12 +56,20 @@ export default function ProgramStartModal({ isOpen, onClose, onSubmit }: Program
       alert('프로그램을 선택하세요.');
       return;
     }
+    if (!programName.trim()) {
+      alert('프로그램 이름을 입력하세요.');
+      return;
+    }
     if (selectedStudentIds.length === 0) {
       alert('학생을 한 명 이상 선택하세요.');
       return;
     }
+    if (!startDate || !endDate) {
+      alert('시작일과 종료일을 입력하세요.');
+      return;
+    }
     setLoading(true);
-    await onSubmit({ programId: selectedProgramId, studentIds: selectedStudentIds });
+    await onSubmit({ programId: selectedProgramId, programName: programName.trim(), studentIds: selectedStudentIds, startDate, endDate });
     setLoading(false);
   }
 
@@ -92,6 +104,18 @@ export default function ProgramStartModal({ isOpen, onClose, onSubmit }: Program
               ))}
             </select>
           </div>
+          {/* 프로그램 이름 입력 */}
+          <div className="mb-4">
+            <label className="block mb-1 text-xs font-medium text-gray-900">프로그램 이름</label>
+            <input
+              type="text"
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+              placeholder="예: 1학년 1반 6월 비만 예방반"
+              value={programName}
+              onChange={e => setProgramName(e.target.value)}
+              required
+            />
+          </div>
           {/* 학생 선택 */}
           <div className="mb-4">
             <label className="block mb-1 text-xs font-medium text-gray-900">학생 선택 (다중)</label>
@@ -105,9 +129,34 @@ export default function ProgramStartModal({ isOpen, onClose, onSubmit }: Program
                     checked={selectedStudentIds.includes(s.id)}
                     onChange={() => handleStudentToggle(s.id)}
                   />
-                  <span>{s.name} ({s.grade}학년 {s.classNumber}반 {s.studentNumber}번)</span>
+                  <span>{s.name} ({
+                    s.schoolType === 'elementary' ? '초등' : s.schoolType === 'middle' ? '중등' : s.schoolType === 'high' ? '고등' : s.schoolType
+                  } {s.grade}학년 {s.classNumber}반 {s.studentNumber}번)</span>
                 </label>
               ))}
+            </div>
+          </div>
+          {/* 프로그램 기간 입력 */}
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="block mb-1 text-xs font-medium text-gray-900">시작일</label>
+              <input
+                type="date"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-xs font-medium text-gray-900">종료일</label>
+              <input
+                type="date"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                required
+              />
             </div>
           </div>
           <div className="mt-3 flex justify-end">

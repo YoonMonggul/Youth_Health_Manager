@@ -41,7 +41,7 @@ const Sidebar: React.FC = () => {
     { name: '학생관리', path: '/students', icon: Users },
     { name: '성장관리', path: '/growth', icon: LineChart },
     { name: '검진관리', path: '/health-checkups', icon: Stethoscope },
-    { name: '프로그램관리', path: '', icon: BarChart }
+    { name: '프로그램관리', path: '/program-management', icon: BarChart }
   ];
 
   return (
@@ -140,20 +140,6 @@ const Sidebar: React.FC = () => {
                 {dataManagementItems.map((item) => {
                   const isActive = pathname === item.path;
                   const Icon = item.icon;
-                  if (item.name === '프로그램관리') {
-                    return (
-                      <li key={item.name}>
-                        <button
-                          type="button"
-                          className="flex items-center p-2 rounded-md opacity-50 cursor-not-allowed w-full"
-                          disabled
-                        >
-                          <Icon className="mr-3 h-4 w-4" />
-                          <span className="text-sm">{item.name}</span>
-                        </button>
-                      </li>
-                    );
-                  }
                   return (
                     <li key={item.path}>
                       <Link 

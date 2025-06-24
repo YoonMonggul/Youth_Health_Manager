@@ -39,6 +39,10 @@ export class ProgramStart {
   })
   students: Student[];
 
+  /** 프로그램 인스턴스 이름 (운영자가 직접 입력, 예: 1학년 1반 6월 비만 예방반) */
+  @Column({ type: 'varchar', length: 100 })
+  programName: string;
+
   /** 이 레코드가 생성된 시각 (자동) */
   @CreateDateColumn()
   createdAt: Date;
