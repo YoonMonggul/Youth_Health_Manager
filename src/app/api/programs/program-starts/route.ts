@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Program } from '@/models/program';
 import { Student } from '@/models/Student';
 import { ProgramStart } from '@/models/ProgramStart';
+import { ProgramLog, ProgramLogType } from '@/models/ProgramLog';
 import { initDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
     const programRepo = AppDataSource.getRepository(Program);
     const studentRepo = AppDataSource.getRepository(Student);
     const programStartRepo = AppDataSource.getRepository(ProgramStart);
+    const programLogRepo = AppDataSource.getRepository(ProgramLog);
 
     const program = await programRepo.findOne({ where: { id: programId } });
     if (!program) {
@@ -46,6 +48,21 @@ export async function POST(request: NextRequest) {
       programName
     });
     const saved = await programStartRepo.save(programStart);
+
+    // 프로그램 시작 로그 생성
+    const startLog = programLogRepo.create({
+      programStart: saved,
+      logType: ProgramLogType.START,
+      title: `${programName} 프로그램 시작`,
+      content: `${programName} 프로그램이 시작되었습니다. 참여 학생: ${students.length}명`,
+      additionalData: {
+        studentCount: students.length,
+        studentNames: students.map(s => s.name)
+      },
+      createdBy: '시스템'
+    });
+    await programLogRepo.save(startLog);
+
     return NextResponse.json(saved, { status: 201 });
   } catch (error) {
     console.error('프로그램 시작 생성 오류:', error);

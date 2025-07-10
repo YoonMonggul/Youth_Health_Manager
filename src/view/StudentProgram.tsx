@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import ProgramAddModal from '@/components/modals/ProgramAddModal';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProgramStartModal from '@/components/modals/ProgramStartModal';
 import ProgramEndModal from '@/components/modals/ProgramEndModal';
+import ParticipantDetailModal from '@/components/modals/ParticipantDetailModal';
 
 interface ProgramStart {
   id: number;
-  program: { id: number; name: string };
+  program: { id: number; name: string; trendType?: string };
   startDate: string;
   endDate: string;
   isStarted: boolean;
@@ -27,25 +28,53 @@ interface Student {
   gender: 'male' | 'female';
 }
 
+interface WeeklyAverage {
+  week: number;
+  averageValue: number | null;
+  participantCount: number;
+  weekStartDate: string;
+  weekEndDate: string;
+}
+
+interface WeeklyAverageData {
+  programId: number;
+  programName: string;
+  trendType: string;
+  totalWeeks: number;
+  weeklyAverages: WeeklyAverage[];
+}
+
+// 프로그램 로그 인터페이스 추가
+interface ProgramLog {
+  id: number;
+  programStartId: number;
+  logType: 'START' | 'END' | 'STUDENT_ADD' | 'STUDENT_REMOVE' | 'NOTICE' | 'REMINDER' | 'CHECKUP' | 'MEASUREMENT' | 'OTHER';
+  title: string;
+  content: string;
+  studentId?: number;
+  studentName?: string;
+  additionalData?: object;
+  createdAt: Date;
+  createdBy?: string;
+}
+
 export default function StudentProgram() {
   // 목업 데이터
   const [selectedTab, setSelectedTab] = useState(3); // 비만도 과체중 탭 활성화
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [isStartModalOpen, setIsStartModalOpen] = useState(false);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
+  const [isParticipantModalOpen, setIsParticipantModalOpen] = useState(false);
   // 최근 시작한 프로그램 6개를 상단 박스에 표시
   const [runningProgramStarts, setRunningProgramStarts] = useState<ProgramStart[]>([]);
-  const recentPrograms = runningProgramStarts
-    .slice()
-    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
-    .slice(0, 6);
-  // 6개 미만이면 빈 박스 채우기
-  const summaryTabs = Array.from({ length: 6 }).map((_, idx) => {
-    const prog = recentPrograms[idx];
-    return prog
-      ? { label: prog.programName || prog.program?.name || '프로그램', value: `${prog.students?.length ?? 0}명` }
-      : { label: '프로그램 없음', value: '-' };
-  });
+  
+  // 주차별 평균값 데이터 상태
+  const [weeklyAverageData, setWeeklyAverageData] = useState<WeeklyAverageData | null>(null);
+  const [loadingWeeklyData, setLoadingWeeklyData] = useState(false);
+
+  // 프로그램 로그 상태 추가
+  const [programLogs, setProgramLogs] = useState<ProgramLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   // 화면 수정 드롭다운 상태 및 체크박스 상태
   const [editDropdownOpen, setEditDropdownOpen] = useState(false);
@@ -58,6 +87,29 @@ export default function StudentProgram() {
     복부비만주의: true,
   });
   const editBtnRef = useRef<HTMLButtonElement>(null);
+
+  // 최근 프로그램 목록 메모이제이션
+  const recentPrograms = useMemo(() => {
+    return runningProgramStarts
+      .slice()
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+      .slice(0, 6);
+  }, [runningProgramStarts]);
+
+  // 선택된 프로그램 메모이제이션
+  const selectedProgram = useMemo(() => {
+    return recentPrograms[selectedTab] || null;
+  }, [recentPrograms, selectedTab]);
+
+  // 6개 미만이면 빈 박스 채우기
+  const summaryTabs = useMemo(() => {
+    return Array.from({ length: 6 }).map((_, idx) => {
+      const prog = recentPrograms[idx];
+      return prog
+        ? { label: prog.programName || prog.program?.name || '프로그램', value: `${prog.students?.length ?? 0}명` }
+        : { label: '프로그램 없음', value: '-' };
+    });
+  }, [recentPrograms]);
 
   function handleCheckChange(key: keyof typeof programChecks) {
     setProgramChecks(prev => ({ ...prev, [key]: !prev[key] }));
@@ -87,7 +139,7 @@ export default function StudentProgram() {
   }
 
   // 진행중인 프로그램 목록 불러오기
-  async function fetchRunningProgramStarts() {
+  const fetchRunningProgramStarts = useCallback(async () => {
     try {
       const res = await fetch('/api/programs/program-starts');
       if (!res.ok) throw new Error('진행중인 프로그램 조회 실패');
@@ -96,11 +148,63 @@ export default function StudentProgram() {
     } catch {
       setRunningProgramStarts([]);
     }
-  }
+  }, []);
+
+  // 주차별 평균값 데이터 불러오기
+  const fetchWeeklyAverageData = useCallback(async (programId: number, trendType: string = 'BMI') => {
+    if (!programId) return;
+    
+    try {
+      setLoadingWeeklyData(true);
+      const res = await fetch(`/api/programs/program-starts/${programId}/weekly-averages?trendType=${trendType}`);
+      if (!res.ok) throw new Error('주차별 평균값 조회 실패');
+      const data = await res.json();
+      setWeeklyAverageData(data);
+    } catch (error) {
+      console.error('주차별 평균값 조회 오류:', error);
+      setWeeklyAverageData(null);
+    } finally {
+      setLoadingWeeklyData(false);
+    }
+  }, []);
+
+  // 프로그램 로그 데이터 불러오기
+  const fetchProgramLogs = useCallback(async (programStartId?: number) => {
+    try {
+      setLoadingLogs(true);
+      const params = new URLSearchParams();
+      if (programStartId) {
+        params.append('programStartId', programStartId.toString());
+      }
+      params.append('limit', '10'); // 최근 10개 로그만 표시
+      
+      const res = await fetch(`/api/programs/program-logs?${params}`);
+      if (!res.ok) throw new Error('프로그램 로그 조회 실패');
+      const data = await res.json();
+      setProgramLogs(data.items || []);
+    } catch (error) {
+      console.error('프로그램 로그 조회 오류:', error);
+      setProgramLogs([]);
+    } finally {
+      setLoadingLogs(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchRunningProgramStarts();
-  }, []);
+  }, [fetchRunningProgramStarts]);
+
+  // 선택된 프로그램이 변경될 때 주차별 평균값 데이터와 로그 불러오기
+  useEffect(() => {
+    if (selectedProgram && selectedProgram.id) {
+      const trendType = selectedProgram.program?.trendType || 'BMI';
+      fetchWeeklyAverageData(selectedProgram.id, trendType);
+      fetchProgramLogs(selectedProgram.id);
+    } else {
+      setWeeklyAverageData(null);
+      fetchProgramLogs(); // 전체 로그 조회
+    }
+  }, [selectedProgram?.id, selectedProgram?.program?.trendType, fetchWeeklyAverageData, fetchProgramLogs]);
 
   // 학년별/성별 카운트 유틸
   function getGradeLabel(schoolType: string, grade: number) {
@@ -116,23 +220,30 @@ export default function StudentProgram() {
   ];
 
   // 선택된 프로그램의 학생 목록
-  const selectedProgram: (ProgramStart & { program?: { trendType?: string } }) | undefined = summaryTabs[selectedTab] && recentPrograms[selectedTab];
-  const selectedStudents: Student[] = (selectedProgram?.students as Student[]) || [];
+  const selectedStudents: Student[] = useMemo(() => {
+    return (selectedProgram?.students as Student[]) || [];
+  }, [selectedProgram?.students]);
 
   // 학년별 인원수 집계
-  const gradeCounts: Record<string, number> = {};
-  gradeOrder.forEach(label => (gradeCounts[label] = 0));
-  selectedStudents.forEach(s => {
-    const label = getGradeLabel(s.schoolType, s.grade);
-    if (label in gradeCounts) gradeCounts[label]++;
-  });
+  const gradeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    gradeOrder.forEach(label => (counts[label] = 0));
+    selectedStudents.forEach(s => {
+      const label = getGradeLabel(s.schoolType, s.grade);
+      if (label in counts) counts[label]++;
+    });
+    return counts;
+  }, [selectedStudents]);
 
   // 성별 인원수 집계
-  let maleCount = 0, femaleCount = 0;
-  selectedStudents.forEach(s => {
-    if (s.gender === 'male') maleCount++;
-    else if (s.gender === 'female') femaleCount++;
-  });
+  const { maleCount, femaleCount } = useMemo(() => {
+    let male = 0, female = 0;
+    selectedStudents.forEach(s => {
+      if (s.gender === 'male') male++;
+      else if (s.gender === 'female') female++;
+    });
+    return { maleCount: male, femaleCount: female };
+  }, [selectedStudents]);
 
   // 학년별 그래프 y축 레이블 계산
   const maxGradeCount = Math.max(...Object.values(gradeCounts));
@@ -145,6 +256,71 @@ export default function StudentProgram() {
   function getTrendTypeLabel(trendType?: string) {
     if (trendType === 'WAIST') return '허리둘레 변화율 추이';
     return 'BMI 변화율 추이';
+  }
+
+  // 그래프 데이터 계산
+  function getGraphData() {
+    if (!weeklyAverageData || !weeklyAverageData.weeklyAverages.length) {
+      return { values: [], maxValue: 0, minValue: 0 };
+    }
+
+    const values = weeklyAverageData.weeklyAverages
+      .filter(w => w.averageValue !== null)
+      .map(w => w.averageValue as number);
+
+    if (values.length === 0) {
+      return { values: [], maxValue: 0, minValue: 0 };
+    }
+
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    const range = maxValue - minValue;
+    
+    // 최소 범위 보장 (값이 모두 같을 때)
+    const adjustedMaxValue = range === 0 ? maxValue + 1 : maxValue + (range * 0.1);
+    const adjustedMinValue = range === 0 ? Math.max(0, minValue - 1) : minValue - (range * 0.1);
+
+    return {
+      values: weeklyAverageData.weeklyAverages.map(w => w.averageValue),
+      maxValue: adjustedMaxValue,
+      minValue: adjustedMinValue
+    };
+  }
+
+  // 로그 타입에 따른 아이콘과 색상 반환
+  function getLogTypeInfo(logType: string) {
+    switch (logType) {
+      case 'START':
+        return { icon: '▶️', color: 'text-green-600', bgColor: 'bg-green-50' };
+      case 'END':
+        return { icon: '⏹️', color: 'text-red-600', bgColor: 'bg-red-50' };
+      case 'NOTICE':
+        return { icon: '📢', color: 'text-blue-600', bgColor: 'bg-blue-50' };
+      case 'REMINDER':
+        return { icon: '💬', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
+      case 'CHECKUP':
+        return { icon: '🏥', color: 'text-purple-600', bgColor: 'bg-purple-50' };
+      case 'MEASUREMENT':
+        return { icon: '📊', color: 'text-indigo-600', bgColor: 'bg-indigo-50' };
+      case 'STUDENT_ADD':
+        return { icon: '➕', color: 'text-green-600', bgColor: 'bg-green-50' };
+      case 'STUDENT_REMOVE':
+        return { icon: '➖', color: 'text-red-600', bgColor: 'bg-red-50' };
+      default:
+        return { icon: '📝', color: 'text-gray-600', bgColor: 'bg-gray-50' };
+    }
+  }
+
+  // 날짜 포맷팅 함수
+  function formatDate(date: Date | string) {
+    const d = new Date(date);
+    return d.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   return (
@@ -205,7 +381,14 @@ export default function StudentProgram() {
           <div className="bg-white rounded-lg shadow p-4 h-full flex flex-col justify-between">
             <div className="flex justify-between items-center mb-2">
               <div className="font-semibold text-base">프로그램 참여자 현황</div>
-              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">대상자 상세보기</Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs px-2 py-1 h-7"
+                onClick={() => setIsParticipantModalOpen(true)}
+              >
+                대상자 상세보기
+              </Button>
             </div>
             {/* 성별 그래프 + 학년별 막대그래프를 flex로 배치 */}
             <div className="flex items-end flex-1">
@@ -310,12 +493,30 @@ export default function StudentProgram() {
           <div className="bg-white rounded-lg shadow p-4 h-full flex flex-col justify-between">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-lg font-bold">{getTrendTypeLabel(selectedProgram?.program?.trendType)}</h3>
-              <span className="text-xs text-gray-500">최근 6주간 {getTrendTypeLabel(selectedProgram?.program?.trendType).replace('변화율 추이', '변화율(%)')}</span>
+              <span className="text-xs text-gray-500">
+                {weeklyAverageData ? `${weeklyAverageData.totalWeeks}주간 평균 ${getTrendTypeLabel(selectedProgram?.program?.trendType).replace('변화율 추이', '')}` : '데이터 로딩 중...'}
+              </span>
             </div>
-            {/* 임의 데이터 */}
-            {(() => {
-              const bmiRates = [0, 2, 1, 3, 2.5, 4];
-              const maxRate = 5;
+            {/* 실제 데이터 기반 그래프 */}
+            {loadingWeeklyData ? (
+              <div className="flex justify-center items-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (() => {
+              const graphData = getGraphData();
+              const { values, maxValue, minValue } = graphData;
+              
+              if (!values.length || values.every(v => v === null)) {
+                return (
+                  <div className="flex justify-center items-center h-40 text-gray-500">
+                    <div className="text-center">
+                      <div className="text-sm font-medium">측정 데이터가 없습니다</div>
+                      <div className="text-xs mt-1">프로그램 참여자들의 측정 데이터를 확인해주세요</div>
+                    </div>
+                  </div>
+                );
+              }
+
               const width = 400;
               const height = 160;
               const leftPad = 40;
@@ -323,37 +524,62 @@ export default function StudentProgram() {
               const topPad = 20;
               const graphW = width - leftPad - 20;
               const graphH = height - topPad - bottomPad;
+              
               // 점 좌표 계산
-              const points = bmiRates.map((v, i) => {
-                const x = leftPad + (graphW / (bmiRates.length - 1)) * i;
-                const y = topPad + graphH - (v / maxRate) * graphH;
-                return [x, y];
-              });
+              const points = values.map((v, i) => {
+                if (v === null) return null;
+                const x = leftPad + (graphW / (values.length - 1)) * i;
+                const y = topPad + graphH - ((v - minValue) / (maxValue - minValue)) * graphH;
+                return [x, y, v];
+              }).filter(p => p !== null) as [number, number, number][];
+
+              if (points.length === 0) {
+                return (
+                  <div className="flex justify-center items-center h-40 text-gray-500">
+                    <div className="text-center">
+                      <div className="text-sm font-medium">유효한 데이터가 없습니다</div>
+                    </div>
+                  </div>
+                );
+              }
+
               // polyline points string
               const polyline = points.map(([x, y]) => `${x},${y}`).join(' ');
+              
               return (
                 <svg width={width} height={height} className="w-full h-40">
-                  {/* y축 */}
-                  <line x1={leftPad} y1={topPad} x2={leftPad} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
                   {/* x축 */}
                   <line x1={leftPad} y1={topPad + graphH} x2={leftPad + graphW} y2={topPad + graphH} stroke="#e5e7eb" strokeWidth="2" />
-                  {/* y축 레이블 */}
-                  {[0, 1, 2, 3, 4, 5].map((v) => (
-                    <text key={v} x={leftPad - 8} y={topPad + graphH - (v / maxRate) * graphH + 4} fontSize="11" textAnchor="end" fill="#888">{v}%</text>
-                  ))}
+                  
                   {/* x축 레이블 */}
-                  {bmiRates.map((_, i) => (
-                    <text key={i} x={leftPad + (graphW / (bmiRates.length - 1)) * i} y={topPad + graphH + 18} fontSize="11" textAnchor="middle" fill="#888">{i + 1}주차</text>
+                  {values.map((_, i) => (
+                    <text 
+                      key={i} 
+                      x={leftPad + (graphW / (values.length - 1)) * i} 
+                      y={topPad + graphH + 18} 
+                      fontSize="11" 
+                      textAnchor="middle" 
+                      fill="#888"
+                    >
+                      {i + 1}주차
+                    </text>
                   ))}
+                  
                   {/* 선그래프 */}
-                  <polyline points={polyline} fill="none" stroke="#38BDF8" strokeWidth="3" />
+                  {points.length > 1 && (
+                    <polyline points={polyline} fill="none" stroke="#38BDF8" strokeWidth="3" />
+                  )}
+                  
                   {/* 점 */}
                   {points.map(([x, y], i) => (
                     <circle key={i} cx={x} cy={y} r="5" fill="#38BDF8" stroke="#fff" strokeWidth="2" />
                   ))}
+                  
                   {/* 값 텍스트 */}
-                  {points.map(([x, y], i) => (
-                    <text key={i} x={x} y={y - 10} fontSize="12" textAnchor="middle" fill="#38BDF8">{bmiRates[i]}%</text>
+                  {points.map(([x, y, value], i) => (
+                    <text key={i} x={x} y={y - 10} fontSize="12" textAnchor="middle" fill="#38BDF8">
+                      {value}
+                    </text>
                   ))}
                 </svg>
               );
@@ -363,22 +589,39 @@ export default function StudentProgram() {
           {/* 프로그램 운영 이력 */}
           <div className="bg-white rounded-lg shadow p-3 h-full flex-1 flex flex-col">
             <div className="font-semibold text-base mb-2">프로그램 운영 이력</div>
-            <ul className="space-y-2">
-              <li className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm">과체중 프로그램 시작 안내</div>
-                  <div className="text-xs text-gray-400">2025. 10. 01 PM 2:00</div>
+            {loadingLogs ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : programLogs.length > 0 ? (
+              <ul className="space-y-2 overflow-y-auto flex-1">
+                {programLogs.map((log) => {
+                  const logInfo = getLogTypeInfo(log.logType);
+                  return (
+                    <li key={log.id} className="flex items-start justify-between p-2 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-start gap-2 flex-1">
+                        <span className="text-lg">{logInfo.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">{log.title}</div>
+                          <div className="text-xs text-gray-500 mt-1">{formatDate(log.createdAt)}</div>
+                          {log.studentName && (
+                            <div className="text-xs text-blue-600 mt-1">학생: {log.studentName}</div>
+                          )}
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7 ml-2 flex-shrink-0">상세보기</Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="flex justify-center items-center h-32 text-gray-500">
+                <div className="text-center">
+                  <div className="text-sm font-medium">운영 이력이 없습니다</div>
+                  <div className="text-xs mt-1">프로그램을 시작하면 이력이 표시됩니다</div>
                 </div>
-                <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">상세보기</Button>
-              </li>
-              <li className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm">과체중 프로그램 독려 안내</div>
-                  <div className="text-xs text-gray-400">2025. 10. 10 PM 2:00</div>
-                </div>
-                <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">상세보기</Button>
-              </li>
-            </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -443,6 +686,14 @@ export default function StudentProgram() {
           }
         }}
         programStarts={runningProgramStarts.filter(p => p.isStarted !== false)}
+      />
+      
+      {/* 참여자 상세보기 모달 */}
+      <ParticipantDetailModal
+        isOpen={isParticipantModalOpen}
+        onClose={() => setIsParticipantModalOpen(false)}
+        programName={selectedProgram?.programName || selectedProgram?.program?.name || '프로그램'}
+        participants={selectedStudents}
       />
     </div>
   );
