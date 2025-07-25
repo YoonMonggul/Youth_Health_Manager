@@ -56,11 +56,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
     await programLogRepo.save(endLog);
 
-    // ProgramEnd에 저장한 후 ProgramStart에서 완전히 삭제
-    await repo.remove(programStart);
+    // ProgramStart의 isStarted를 false로 변경 (삭제하지 않음)
+    programStart.isStarted = false;
+    await repo.save(programStart);
     
-    console.log(`[프로그램 종료 및 삭제] id=${programId}, reason=${reason}`);
-    return NextResponse.json({ message: '프로그램이 종료되고 삭제되었습니다.' });
+    console.log(`[프로그램 종료] id=${programId}, reason=${reason}`);
+    return NextResponse.json({ message: '프로그램이 종료되었습니다.' });
   } catch (error) {
     console.error('프로그램 종료 오류:', error);
     return NextResponse.json({ error: '프로그램 종료 중 오류가 발생했습니다.' }, { status: 500 });

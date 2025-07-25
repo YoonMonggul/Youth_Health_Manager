@@ -1,5 +1,5 @@
 "use client"
 
-import Edudata from '@/view/Edudata';
+import ContentManagement from '@/view/ContentManagement';
  
-export default Edudata; 
+export default ContentManagement; 

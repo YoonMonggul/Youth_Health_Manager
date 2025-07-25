@@ -29,19 +29,19 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { name: '홈', path: '/', icon: Home },
     { name: '일정관리', path: '/schedule', icon: Calendar },
-    { name: '교육자료', path: '/education', icon: BookOpen },
   ];
 
   const healthManagementItems = [
     { name: '개별관리', path: '/health/individual', icon: UserCircle },
-    { name: '그룹관리', path: '/student-program', icon: Users2 }
+    { name: '프로그램', path: '/student-program', icon: Users2 },
+    { name: '컨텐츠관리', path: '/education', icon: BookOpen }
   ];
 
   const dataManagementItems = [
     { name: '학생관리', path: '/students', icon: Users },
     { name: '성장관리', path: '/growth', icon: LineChart },
     { name: '검진관리', path: '/health-checkups', icon: Stethoscope },
-    { name: '프로그램관리', path: '/program-management', icon: BarChart }
+    { name: '종료프로그램', path: '/program-management', icon: BarChart }
   ];
 
   return (
@@ -86,7 +86,7 @@ const Sidebar: React.FC = () => {
             <button
               onClick={() => setIsHealthManagementOpen(!isHealthManagementOpen)}
               className={`w-full flex items-center p-3 rounded-md hover:bg-gray-800 transition-colors ${
-                pathname.startsWith('/health') ? 'bg-gray-800' : ''
+                pathname.startsWith('/health') || pathname === '/education' ? 'bg-gray-800' : ''
               }`}
             >
               <Heart className="mr-3 h-5 w-5" />
@@ -128,7 +128,7 @@ const Sidebar: React.FC = () => {
               className="w-full flex items-center p-3 rounded-md hover:bg-gray-800 transition-colors"
             >
               <Database className="mr-3 h-5 w-5" />
-              <span>데이터 관리</span>
+              <span>데이터관리</span>
               {isDataManagementOpen ? (
                 <ChevronDown className="ml-auto h-4 w-4" />
               ) : (

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Search, Eye, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ProgramEnd {
   id: number;
@@ -14,6 +15,7 @@ interface ProgramEnd {
 }
 
 export default function ProgramManagement() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [programs, setPrograms] = useState<ProgramEnd[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +49,9 @@ export default function ProgramManagement() {
     }
   }
 
-  // 상세 핸들러
+  // 상세 핸들러 - 새로운 페이지로 이동
   function handleDetail(id: number) {
-    alert('상세보기: ' + id);
+    router.push(`/program-management/${id}`);
   }
 
   return (

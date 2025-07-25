@@ -82,10 +82,10 @@ const HomePage: React.FC = () => {
       )}
 
       {/* 카드 영역 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* 일정 관리 카드 */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-3">일정 관리</h2>
+          <h2 className="text-xl font-semibold mb-3">일정관리</h2>
           <p className="text-gray-600 mb-4">오늘의 일정과 중요 이벤트를 확인하세요.</p>
           <button 
             onClick={() => router.push('/schedule')}
@@ -95,12 +95,84 @@ const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* 대상자 관리 카드 */}
+        {/* 개별관리 카드 */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-3">대상자 관리</h2>
-          <p className="text-gray-600 mb-4">학생 및 대상자 정보를 확인하고 관리하세요.</p>
+          <h2 className="text-xl font-semibold mb-3">개별관리</h2>
+          <p className="text-gray-600 mb-4">학생 개별 건강 상태를 관리하세요.</p>
+          <button 
+            onClick={() => router.push('/health/individual')}
+            className="flex items-center text-blue-600 font-medium hover:underline"
+          >
+            바로가기 <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        {/* 프로그램 카드 */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-3">프로그램</h2>
+          <p className="text-gray-600 mb-4">운영 중인 건강 프로그램을 관리하세요.</p>
+          <button 
+            onClick={() => router.push('/student-program')}
+            className="flex items-center text-blue-600 font-medium hover:underline"
+          >
+            바로가기 <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        {/* 컨텐츠관리 카드 */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-3">컨텐츠관리</h2>
+          <p className="text-gray-600 mb-4">주간 교육 컨텐츠를 등록·수정할 수 있습니다.</p>
+          <button 
+            onClick={() => router.push('/education')}
+            className="flex items-center text-blue-600 font-medium hover:underline"
+          >
+            바로가기 <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        {/* 학생관리 카드 */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-3">학생관리</h2>
+          <p className="text-gray-600 mb-4">학생 정보를 등록하고 관리하세요.</p>
           <button 
             onClick={() => router.push('/students')}
+            className="flex items-center text-blue-600 font-medium hover:underline"
+          >
+            바로가기 <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        {/* 성장관리 카드 */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-3">성장관리</h2>
+          <p className="text-gray-600 mb-4">학생들의 성장 데이터를 관리하세요.</p>
+          <button 
+            onClick={() => router.push('/growth')}
+            className="flex items-center text-blue-600 font-medium hover:underline"
+          >
+            바로가기 <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        {/* 검진관리 카드 */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-3">검진관리</h2>
+          <p className="text-gray-600 mb-4">건강검진 데이터를 관리하세요.</p>
+          <button 
+            onClick={() => router.push('/health-checkups')}
+            className="flex items-center text-blue-600 font-medium hover:underline"
+          >
+            바로가기 <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        {/* 종료프로그램 카드 */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-3">종료프로그램</h2>
+          <p className="text-gray-600 mb-4">종료된 프로그램의 이력과 결과를 확인하세요.</p>
+          <button 
+            onClick={() => router.push('/program-management')}
             className="flex items-center text-blue-600 font-medium hover:underline"
           >
             바로가기 <ChevronRight className="h-4 w-4 ml-1" />

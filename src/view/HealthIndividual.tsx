@@ -106,19 +106,10 @@ export default function HealthIndividual() {
         
         setClassesInfo(classesInfoArray);
         
-        // 첫 번째 학생 선택 (있다면)
-        if (studentList.length > 0) {
-          const firstStudent = studentList[0];
-          setSelectedStudent(firstStudent);
-          setActiveClass({
-            grade: firstStudent.grade,
-            classNumber: firstStudent.classNumber
-          });
-          
-          // 선택된 학생의 건강검진 데이터와 성장 데이터 가져오기
-          await fetchHealthData(firstStudent.id);
-          await fetchGrowthData(firstStudent.id);
-        }
+        // 전체 학생 탭이 기본 (activeClass를 null로)
+        setActiveClass(null);
+        setSelectedStudent(null);
+        setGrowthData([]);
       } catch (error) {
         console.error('학생 목록 로딩 오류:', error);
       } finally {
@@ -474,54 +465,55 @@ export default function HealthIndividual() {
                 </div>
 
                 {/* 주요 건강 항목 */}
-                <div className="mb-4 bg-white rounded-md border border-gray-200">
+                <div className="mb-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                   <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                    <h3 className="text-lg font-medium">주요건강 항목</h3>
-                    <button className="text-xs text-white bg-gray-700 px-2 py-1 rounded">상세</button>
+                    <h3 className="text-lg font-semibold text-gray-800">주요건강 항목</h3>
                   </div>
                   
-                  <div className="grid grid-cols-12 p-4">
+                  <div className="grid grid-cols-12 p-6">
                     {loadingGrowth ? (
-                      <div className="col-span-12 flex justify-center items-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="col-span-12 flex justify-center items-center py-12">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
                       </div>
                     ) : latestGrowth ? (
                       <>
                         {/* 키 정보 */}
-                        <div className="col-span-6 flex flex-col items-center justify-center px-4">
-                          <div className="mb-2 w-full">
-                            {/* 키 정보 타이틀과 설명 제거 */}
+                        <div className="col-span-6 flex flex-col items-center justify-center px-6">
+                          {/* 키 정보 상단 카드 */}
+                          <div className="w-full mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
+                            <div className="text-center">
+                              <div className="text-xl font-bold text-blue-700 mb-0.5">
+                                {Number(latestGrowth.height).toFixed(1)}cm
+                              </div>
+                              <div className="text-xs text-blue-600 font-medium mb-0.5">
+                                키
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                또래평균 {selectedStudent.gender === 'female' 
+                                  ? femaleHeightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.height.toFixed(1)
+                                  : maleHeightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.height.toFixed(1)}cm
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                              </div>
                             </div>
+                          </div>
                             
                           {/* 키 그래프 */}
-                          <div className="w-full mt-2">
-                            <svg width="100%" height="340" viewBox="0 0 400 400" preserveAspectRatio="none">
+                          <div className="w-full bg-white rounded-lg border border-gray-100 p-2">
+                            <svg width="100%" height="320" viewBox="0 0 400 400" preserveAspectRatio="none">
                               <g transform="translate(40, 20)">
-                                {/* 키 데이터 박스 */}
-                                <rect x="5" y="10" width="120" height="60" rx="4" fill="white" stroke="#e5e7eb" />
-                                <text x="15" y="32" fontSize="15" fontWeight="bold" fill="#000000">
-                                  키 {Number(latestGrowth.height).toFixed(1)}cm
-                                </text>
-                                <text x="15" y="45" fontSize="12" fill="#666666">
-                                  또래평균 {selectedStudent.gender === 'female' 
-                                    ? femaleHeightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.height.toFixed(1)
-                                    : maleHeightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.height.toFixed(1)}cm
-                                </text>
-                                <text x="15" y="55" fontSize="11" fill="#999999">
-                                  측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                                </text>
-                                
                                 {/* Y축 선 */}
-                                <line x1="0" y1="0" x2="0" y2="340" stroke="#e5e7eb" strokeWidth="1.5" />
+                                <line x1="0" y1="0" x2="0" y2="320" stroke="#e5e7eb" strokeWidth="1.5" />
                                 {/* X축 선 */}
-                                <line x1="0" y1="340" x2="320" y2="340" stroke="#e5e7eb" strokeWidth="1.5" />
+                                <line x1="0" y1="320" x2="320" y2="320" stroke="#e5e7eb" strokeWidth="1.5" />
                                 
                                 {/* 날짜 x축 레이블 - 만 나이로 변경 */}
                                 {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((age, i) => (
                                   <text 
                                     key={i} 
                                     x={i * 26.6} 
-                                    y="360" 
+                                    y="340" 
                                     fontSize="11" 
                                     textAnchor="middle"
                                     fill="#666"
@@ -532,7 +524,7 @@ export default function HealthIndividual() {
                                 
                                 {/* 그래프 구역 영역 - 참고 영역 */}
                                 <path
-                                  d="M0,330 C40,320 80,310 120,290 S200,260 240,220 S280,180 320,150"
+                                  d="M0,310 C40,300 80,290 120,270 S200,240 240,200 S280,160 320,130"
                                   fill="#f0f9ff"
                                   opacity="0.3"
                                 />
@@ -544,13 +536,13 @@ export default function HealthIndividual() {
                                       ? femaleHeightData.map((point, i) => {
                                           // 7세를 x=0, 18세를 x=320으로 스케일링
                                           const x = ((point.age - 7) / 11) * 320;
-                                          // 100cm를 y=340, 180cm를 y=0으로 스케일링
-                                          const y = 340 - ((point.height - 100) / 80) * 340;
+                                          // 100cm를 y=320, 180cm를 y=0으로 스케일링
+                                          const y = 320 - ((point.height - 100) / 80) * 320;
                                           return `${i === 0 ? 'M' : 'L'}${x},${y}`;
                                         }).join(' ')
                                       : maleHeightData.map((point, i) => {
                                           const x = ((point.age - 7) / 11) * 320;
-                                          const y = 340 - ((point.height - 100) / 80) * 340;
+                                          const y = 320 - ((point.height - 100) / 80) * 320;
                                           return `${i === 0 ? 'M' : 'L'}${x},${y}`;
                                         }).join(' ')
                                     }
@@ -568,7 +560,7 @@ export default function HealthIndividual() {
                                     {/* 현재 나이와 키에 해당하는 데이터 포인트 */}
                                     <circle
                                       cx={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      cy={340 - ((Number(latestGrowth.height) - 100) / 80) * 340}
+                                      cy={320 - ((Number(latestGrowth.height) - 100) / 80) * 320}
                                       r="6"
                                       fill={selectedStudent.gender === 'female' ? "#ec4899" : "#3b82f6"}
                                       stroke="white"
@@ -578,7 +570,7 @@ export default function HealthIndividual() {
                                     {/* 키 값 텍스트 표시 */}
                                     <text
                                       x={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      y={340 - ((Number(latestGrowth.height) - 100) / 80) * 340 - 12}
+                                      y={320 - ((Number(latestGrowth.height) - 100) / 80) * 320 - 12}
                                       fontSize="12"
                                       fontWeight="bold"
                                       textAnchor="middle"
@@ -590,9 +582,9 @@ export default function HealthIndividual() {
                                     {/* 현재 위치 표시선 */}
                                     <line
                                       x1={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      y1={340 - ((Number(latestGrowth.height) - 100) / 80) * 340}
+                                      y1={320 - ((Number(latestGrowth.height) - 100) / 80) * 320}
                                       x2={((calculateAge(selectedStudent.birthDate) - 7) / 11) * 320}
-                                      y2="340"
+                                      y2="320"
                                       stroke={selectedStudent.gender === 'female' ? "#ec4899" : "#3b82f6"}
                                       strokeWidth="1.5"
                                       strokeDasharray="4,4"
@@ -602,43 +594,45 @@ export default function HealthIndividual() {
                                 
                                 {/* Y축 값 레이블 */}
                                 <text x="-10" y="0" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">180</text>
-                                <text x="-10" y="85" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">160</text>
-                                <text x="-10" y="170" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">140</text>
-                                <text x="-10" y="255" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">120</text>
-                                <text x="-10" y="340" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">100</text>
+                                <text x="-10" y="80" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">160</text>
+                                <text x="-10" y="160" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">140</text>
+                                <text x="-10" y="240" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">120</text>
+                                <text x="-10" y="320" fontSize="11" textAnchor="end" dominantBaseline="middle" fill="#666">100</text>
                               </g>
                             </svg>
-                              </div>
-                              </div>
+                          </div>
+                        </div>
                         
                         {/* 체중 정보 */}
-                        <div className="col-span-6 flex flex-col items-center justify-center px-4">
-                          <div className="mb-2 w-full">
-                            {/* 체중 정보 타이틀과 설명 제거 */}
+                        <div className="col-span-6 flex flex-col items-center justify-center px-6">
+                          {/* 체중 정보 상단 카드 */}
+                          <div className="w-full mb-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-100">
+                            <div className="text-center">
+                              <div className="text-xl font-bold text-purple-700 mb-0.5">
+                                {Number(latestGrowth.weight).toFixed(1)}kg
+                              </div>
+                              <div className="text-xs text-purple-600 font-medium mb-0.5">
+                                체중
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                또래평균 {weightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.weight.toFixed(1)}kg
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                              </div>
                             </div>
+                          </div>
                             
                           {/* 체중 그래프 */}
-                          <div className="w-full mt-2">
+                          <div className="w-full bg-white rounded-lg border border-gray-100 p-2">
                             {/* y축 0~100kg로 맞춤 */}
                             {(() => {
                               const minWeight = 0;
                               const maxWeight = 100;
-                              const graphHeight = 340;
+                              const graphHeight = 320;
                               return (
                                 <svg width="100%" height={graphHeight} viewBox="0 0 400 400" preserveAspectRatio="none">
                                   <g transform="translate(40, 20)">
-                                    {/* 체중 데이터 박스 */}
-                                    <rect x="5" y="10" width="120" height="60" rx="4" fill="white" stroke="#e5e7eb" />
-                                    <text x="15" y="32" fontSize="15" fontWeight="bold" fill="#000000">
-                                      체중 {Number(latestGrowth.weight).toFixed(1)}kg
-                                    </text>
-                                    <text x="15" y="45" fontSize="12" fill="#666666">
-                                      또래평균 {weightData.find(d => d.age === calculateAge(selectedStudent.birthDate))?.weight.toFixed(1)}kg
-                                    </text>
-                                    <text x="15" y="55" fontSize="11" fill="#999999">
-                                      측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                                    </text>
-                                    
                                     {/* Y축 선 */}
                                     <line x1="0" y1="0" x2="0" y2={graphHeight} stroke="#e5e7eb" strokeWidth="1.5" />
                                     {/* X축 선 */}
@@ -725,101 +719,108 @@ export default function HealthIndividual() {
                         </div>
                       </>
                     ) : (
-                      <div className="col-span-12 py-8 text-center text-gray-500">
-                        데이터가 없습니다.
+                      <div className="col-span-12 py-12 text-center text-gray-500">
+                        <div className="text-lg font-medium mb-2">데이터가 없습니다</div>
+                        <div className="text-sm">성장 데이터를 등록해주세요</div>
                       </div>
-                              )}
-                            </div>
-                          </div>
-                          
+                    )}
+                  </div>
+                </div>
+
                 {/* BMI와 허리둘레 판단 박스 */}
                 {selectedStudent && latestGrowth && (
-                  <div className="grid grid-cols-2 gap-4 mt-4 mb-4">
+                  <div className="grid grid-cols-2 gap-6 mt-6 mb-4">
                     {/* BMI 판단 박스 */}
-                    <div className="bg-white rounded-md border border-gray-200 p-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex flex-col justify-center border-r border-dashed border-gray-300 pr-4">
-                          <div className="text-sm font-semibold text-gray-700 mb-2">비만도</div>
-                          <div className="text-sm font-semibold text-gray-600">
-                            BMI {Number(latestGrowth.bmi).toFixed(1)}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-blue-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                            <span className="text-sm font-semibold text-blue-700">비만도</span>
                           </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                        </div>
-                        </div>
-                        <div className="col-span-2 space-y-3 pl-4">
-                          <div className="flex justify-end">
-                            <span className="text-lg font-extrabold text-blue-600">
-                              {Number(latestGrowth.bmi).toFixed(1)}
-                                </span>
-                              </div>
-                          <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="absolute h-full bg-blue-500 transition-all duration-300"
-                                    style={{ 
-                                width: `${Math.min(100, (Number(latestGrowth.bmi) / 30) * 100)}%`,
-                                backgroundColor: 
-                                  selectedStudent.gender === 'male' ? (
-                                    Number(latestGrowth.bmi) < 14.7 ? '#3b82f6' :
-                                    Number(latestGrowth.bmi) < 21.2 ? '#22c55e' :
-                                    Number(latestGrowth.bmi) < 23.1 ? '#eab308' :
-                                    '#ef4444'
-                                  ) : (
-                                    Number(latestGrowth.bmi) < 14.4 ? '#3b82f6' :
-                                    Number(latestGrowth.bmi) < 20.6 ? '#22c55e' :
-                                    Number(latestGrowth.bmi) < 22.4 ? '#eab308' :
-                                    '#ef4444'
-                                  )
-                              }}
-                            />
-                              </div>
-                          <div className="flex justify-between text-xs font-medium text-gray-500">
-                            <span>저체중</span>
-                            <span>정상</span>
-                            <span>과체중</span>
-                            <span>비만</span>
-                              </div>
-                            </div>
-                            </div>
-                          </div>
-                          
-                    {/* 허리둘레 판단 박스 */}
-                    <div className="bg-white rounded-md border border-gray-200 p-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex flex-col justify-center border-r border-dashed border-gray-300 pr-4">
-                          <div className="text-sm font-semibold text-gray-700 mb-2">복부비만</div>
-                          <div className="text-sm font-semibold text-gray-600">
-                            {latestGrowth.waistCircumference ? Number(latestGrowth.waistCircumference).toFixed(1) : '-'} cm
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            측정일 {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                          <span className="text-xs text-blue-600">
+                            {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                          </span>
                         </div>
                       </div>
-                        <div className="col-span-2 space-y-3 pl-4">
-                          <div className="flex justify-end">
-                            <span className="text-lg font-extrabold text-purple-600">
-                              {latestGrowth.waistCircumference && latestGrowth.height ? 
-                                (Number(latestGrowth.waistCircumference) / Number(latestGrowth.height)).toFixed(2) : '-'}
-                            </span>
-                  </div>
-                          <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="absolute h-full bg-purple-500 transition-all duration-300"
-                              style={{ 
-                                width: `${latestGrowth.waistCircumference && latestGrowth.height ? 
-                                  Math.min(100, ((Number(latestGrowth.waistCircumference) / Number(latestGrowth.height)) / 0.43) * 100) : 0}%`,
-                                backgroundColor: 
-                                  !latestGrowth.waistCircumference || !latestGrowth.height ? '#e5e7eb' :
-                                  (Number(latestGrowth.waistCircumference) / Number(latestGrowth.height)) < 0.43 ? '#22c55e' : // 양호
-                                  '#ef4444' // 의심
-                              }}
-                            />
-                </div>
-                          <div className="flex justify-between text-xs font-medium text-gray-500">
-                            <span>양호</span>
-                            <span>의심</span>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-sm text-gray-600">BMI</div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {Number(latestGrowth.bmi).toFixed(1)}
                           </div>
                         </div>
+                        <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden mb-3">
+                          <div 
+                            className="absolute h-full transition-all duration-300 rounded-full"
+                            style={{ 
+                              width: `${Math.min(100, (Number(latestGrowth.bmi) / 30) * 100)}%`,
+                              backgroundColor: 
+                                selectedStudent.gender === 'male' ? (
+                                  Number(latestGrowth.bmi) < 14.7 ? '#3b82f6' :
+                                  Number(latestGrowth.bmi) < 21.2 ? '#22c55e' :
+                                  Number(latestGrowth.bmi) < 23.1 ? '#eab308' :
+                                  '#ef4444'
+                                ) : (
+                                  Number(latestGrowth.bmi) < 14.4 ? '#3b82f6' :
+                                  Number(latestGrowth.bmi) < 20.6 ? '#22c55e' :
+                                  Number(latestGrowth.bmi) < 22.4 ? '#eab308' :
+                                  '#ef4444'
+                                )
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs font-medium text-gray-500">
+                          <span className="text-blue-600">저체중</span>
+                          <span className="text-green-600">정상</span>
+                          <span className="text-yellow-600">과체중</span>
+                          <span className="text-red-600">비만</span>
+                        </div>
+                      </div>
+                    </div>
+                          
+                    {/* 허리둘레 판단 박스 */}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-3 border-b border-purple-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+                            <span className="text-sm font-semibold text-purple-700">복부비만</span>
+                          </div>
+                          <span className="text-xs text-purple-600">
+                            {new Date(latestGrowth.measurementDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-sm text-gray-600">허리둘레</div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {latestGrowth.waistCircumference ? Number(latestGrowth.waistCircumference).toFixed(1) : '-'} cm
+                          </div>
+                        </div>
+                        <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden mb-3">
+                          <div 
+                            className="absolute h-full transition-all duration-300 rounded-full"
+                            style={{ 
+                              width: `${latestGrowth.waistCircumference && latestGrowth.height ? 
+                                Math.min(100, ((Number(latestGrowth.waistCircumference) / Number(latestGrowth.height)) / 0.43) * 100) : 0}%`,
+                              backgroundColor: 
+                                !latestGrowth.waistCircumference || !latestGrowth.height ? '#e5e7eb' :
+                                (Number(latestGrowth.waistCircumference) / Number(latestGrowth.height)) < 0.43 ? '#22c55e' : // 양호
+                                '#ef4444' // 의심
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs font-medium text-gray-500">
+                          <span className="text-green-600">양호</span>
+                          <span className="text-red-600">의심</span>
+                        </div>
+                        {latestGrowth.waistCircumference && latestGrowth.height && (
+                          <div className="mt-2 text-xs text-gray-600 text-center">
+                            비율: {(Number(latestGrowth.waistCircumference) / Number(latestGrowth.height)).toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
