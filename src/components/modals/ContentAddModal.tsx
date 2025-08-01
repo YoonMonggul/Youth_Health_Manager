@@ -190,7 +190,7 @@ export default function ContentAddModal({
         
         <form onSubmit={handleSubmit} className="p-4">
           {/* 기본 정보 */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             <div>
               <label className="block mb-1 text-xs font-medium text-gray-900">
                 컨텐츠 제목 *
@@ -220,6 +220,22 @@ export default function ContentAddModal({
                 onChange={handleInputChange}
                 required
               />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-xs font-medium text-gray-900">
+                컨텐츠 타입 *
+              </label>
+              <select
+                name="contentType"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                value={formData.contentType || 'general'}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="general">일반 컨텐츠</option>
+                <option value="program">프로그램용 컨텐츠</option>
+              </select>
             </div>
           </div>
 

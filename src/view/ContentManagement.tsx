@@ -10,7 +10,7 @@ export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedContentType, setSelectedContentType] = useState<string>("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingData, setEditingData] = useState<Partial<Content>>({});
@@ -23,7 +23,7 @@ export default function ContentManagement() {
       setLoading(true);
       const params = new URLSearchParams();
       if (searchTerm) params.append('searchTerm', searchTerm);
-      if (selectedCategory) params.append('category', selectedCategory);
+      if (selectedContentType) params.append('contentType', selectedContentType);
       
       const response = await fetch(`/api/contents?${params}`);
       if (!response.ok) throw new Error('컨텐츠 조회에 실패했습니다.');
@@ -40,7 +40,7 @@ export default function ContentManagement() {
 
   useEffect(() => {
     fetchContents();
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedContentType]);
 
   const handleAddContent = () => {
     setEditingId(null);
@@ -104,10 +104,6 @@ export default function ContentManagement() {
     setSearchTerm(e.target.value);
   };
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCategory(e.target.value);
-  };
-
   return (
     <Layout pageTitle="컨텐츠관리">
       <div className="p-6">
@@ -159,16 +155,13 @@ export default function ContentManagement() {
             </div>
           </div>
           <select
-            value={selectedCategory}
-            onChange={handleCategoryChange}
+            value={selectedContentType}
+            onChange={(e) => setSelectedContentType(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">전체 카테고리</option>
-            <option value="질병예방">질병예방</option>
-            <option value="영양교육">영양교육</option>
-            <option value="운동교육">운동교육</option>
-            <option value="정신건강">정신건강</option>
-            <option value="안전교육">안전교육</option>
+            <option value="">컨텐츠 종류</option>
+            <option value="general">일반 컨텐츠</option>
+            <option value="program">프로그램용 컨텐츠</option>
           </select>
         </div>
 
@@ -190,6 +183,13 @@ export default function ContentManagement() {
                       </span>
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                         {content.weekNumber}주차
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        content.contentType === 'general' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {content.contentType === 'general' ? '일반' : '프로그램'}
                       </span>
                       <span className={content.status === 'active' ? 'text-green-600' : 'text-red-600'}>
                         {content.status === 'active' ? '활성' : '비활성'}

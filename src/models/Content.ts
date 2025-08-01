@@ -15,6 +15,13 @@ export class Content {
   @Column({ length: 50, nullable: true })
   category: string; // 카테고리 (예: 질병예방, 영양교육, 운동교육 등)
 
+  @Column({ 
+    type: 'enum', 
+    enum: ['general', 'program'], 
+    default: 'general' 
+  })
+  contentType: 'general' | 'program'; // 컨텐츠 타입: 일반 컨텐츠 또는 프로그램용 컨텐츠
+
   @Column({ length: 20, default: 'active' })
   status: 'active' | 'inactive'; // 컨텐츠 상태
 

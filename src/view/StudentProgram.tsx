@@ -60,7 +60,7 @@ interface ProgramLog {
 
 export default function StudentProgram() {
   // 목업 데이터
-  const [selectedTab, setSelectedTab] = useState(3); // 비만도 과체중 탭 활성화
+  const [selectedTab, setSelectedTab] = useState(0); // 첫 번째 탭으로 초기화
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [isStartModalOpen, setIsStartModalOpen] = useState(false);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
@@ -78,6 +78,7 @@ export default function StudentProgram() {
 
   // 화면 수정 드롭다운 상태 및 체크박스 상태
   const [editDropdownOpen, setEditDropdownOpen] = useState(false);
+  const [showAllPrograms, setShowAllPrograms] = useState(false);
   const [programChecks, setProgramChecks] = useState({
     저체중: true,
     정상체중: true,
@@ -92,8 +93,7 @@ export default function StudentProgram() {
   const recentPrograms = useMemo(() => {
     return runningProgramStarts
       .slice()
-      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
-      .slice(0, 6);
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   }, [runningProgramStarts]);
 
   // 선택된 프로그램 메모이제이션
@@ -103,13 +103,53 @@ export default function StudentProgram() {
 
   // 6개 미만이면 빈 박스 채우기
   const summaryTabs = useMemo(() => {
-    return Array.from({ length: 6 }).map((_, idx) => {
-      const prog = recentPrograms[idx];
-      return prog
-        ? { label: prog.programName || prog.program?.name || '프로그램', value: `${prog.students?.length ?? 0}명` }
-        : { label: '프로그램 없음', value: '-' };
+    const tabs: Array<{
+      label: string;
+      value: string;
+      isProgram: boolean;
+      programIndex?: number;
+    }> = [];
+    
+    // 실제 프로그램들 추가 (showAllPrograms에 따라 다르게 표시)
+    const programsToShow = showAllPrograms ? recentPrograms : recentPrograms.slice(0, 6);
+    
+    programsToShow.forEach((prog, idx) => {
+      tabs.push({
+        label: prog.programName || prog.program?.name || '프로그램',
+        value: `${prog.students?.length ?? 0}명`,
+        isProgram: true,
+        programIndex: idx
+      });
     });
-  }, [recentPrograms]);
+    
+    // 빈 박스 추가 로직 수정
+    if (!showAllPrograms) {
+      // 첫 번째 줄에서만 빈 박스 추가 (6개 미만일 때)
+      if (recentPrograms.length < 6) {
+        const emptySlots = 6 - recentPrograms.length;
+        for (let i = 0; i < emptySlots; i++) {
+          tabs.push({
+            label: '프로그램 시작',
+            value: '+',
+            isProgram: false
+          });
+        }
+      }
+    } else {
+      // 전체 보기 모드에서는 모든 줄에 6개씩 맞춤
+      const totalSlots = Math.ceil(recentPrograms.length / 6) * 6;
+      const emptySlots = totalSlots - recentPrograms.length;
+      for (let i = 0; i < emptySlots; i++) {
+        tabs.push({
+          label: '프로그램 시작',
+          value: '+',
+          isProgram: false
+        });
+      }
+    }
+    
+    return tabs;
+  }, [recentPrograms, showAllPrograms]);
 
   function handleCheckChange(key: keyof typeof programChecks) {
     setProgramChecks(prev => ({ ...prev, [key]: !prev[key] }));
@@ -194,6 +234,13 @@ export default function StudentProgram() {
     fetchRunningProgramStarts();
   }, [fetchRunningProgramStarts]);
 
+  // 프로그램이 로드될 때 selectedTab 자동 조정
+  useEffect(() => {
+    if (recentPrograms.length > 0 && selectedTab >= recentPrograms.length) {
+      setSelectedTab(0); // 선택된 탭이 유효하지 않으면 첫 번째 탭으로
+    }
+  }, [recentPrograms.length, selectedTab]);
+
   // 선택된 프로그램이 변경될 때 주차별 평균값 데이터와 로그 불러오기
   useEffect(() => {
     if (selectedProgram && selectedProgram.id) {
@@ -202,7 +249,7 @@ export default function StudentProgram() {
       fetchProgramLogs(selectedProgram.id);
     } else {
       setWeeklyAverageData(null);
-      fetchProgramLogs(); // 전체 로그 조회
+      setProgramLogs([]); // 로그 초기화
     }
   }, [selectedProgram?.id, selectedProgram?.program?.trendType, fetchWeeklyAverageData, fetchProgramLogs]);
 
@@ -327,14 +374,16 @@ export default function StudentProgram() {
     <div className="flex flex-col h-full w-full bg-[#F7F8FA]">
       {/* 상단 화면 수정 버튼 */}
       <div className="flex justify-end mt-4 mb-1 px-2 relative">
-        <button
-          ref={editBtnRef}
-          type="button"
-          className="border rounded px-3 py-1 h-8 text-xs font-medium bg-white hover:bg-gray-50 shadow-sm"
-          onClick={() => setEditDropdownOpen(v => !v)}
-        >
-          프로그램 보기
-        </button>
+        {recentPrograms.length > 6 && (
+          <button
+            ref={editBtnRef}
+            type="button"
+            className="border rounded px-3 py-1 h-8 text-xs font-medium bg-white hover:bg-gray-50 shadow-sm"
+            onClick={() => setShowAllPrograms(!showAllPrograms)}
+          >
+            {showAllPrograms ? '프로그램 접기' : '프로그램 전체 보기'}
+          </button>
+        )}
         {editDropdownOpen && (
           <div
             tabIndex={-1}
@@ -357,19 +406,27 @@ export default function StudentProgram() {
       </div>
 
       {/* 상단 통계 요약 */}
-      <div className="flex gap-1.5 mb-2">
+      <div className="grid grid-cols-6 gap-1.5 mb-2">
         {summaryTabs.map((tab, idx) => (
           <div
             key={idx}
-            className={`flex-1 rounded-lg px-3 py-2 text-center font-bold text-base shadow-sm border cursor-pointer whitespace-pre-line ${
-              selectedTab === idx
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-[#F3F4F6] text-gray-900 border-gray-200"
+            className={`rounded-lg px-3 py-2 text-center font-bold text-base shadow-sm border cursor-pointer whitespace-pre-line transition-all duration-200 ${
+              tab.isProgram
+                ? selectedTab === idx
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-[#F3F4F6] text-gray-900 border-gray-200 hover:bg-gray-100"
+                : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300"
             }`}
-            onClick={() => setSelectedTab(idx)}
+            onClick={() => {
+              if (tab.isProgram && tab.programIndex !== undefined) {
+                setSelectedTab(tab.programIndex);
+              } else {
+                setIsStartModalOpen(true);
+              }
+            }}
           >
             <div className="truncate" title={tab.label}>{tab.label}</div>
-            <div className="text-xl mt-0.5">{tab.value}</div>
+            <div className={`text-xl mt-0.5 ${!tab.isProgram ? 'text-green-600 font-bold' : ''}`}>{tab.value}</div>
           </div>
         ))}
       </div>
