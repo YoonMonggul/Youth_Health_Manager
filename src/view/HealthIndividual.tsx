@@ -17,10 +17,13 @@ export default function HealthIndividual() {
   
   // 건강 구분 필터링 상태 추가
   const [activeHealthFilter, setActiveHealthFilter] = useState<string | null>(null);
-
+  
   // 성장 데이터 상태
   const [growthData, setGrowthData] = useState<Growth[]>([]);
   const [loadingGrowth, setLoadingGrowth] = useState<boolean>(false);
+  
+  // 모든 학생의 성장 데이터를 저장할 상태 추가
+  const [allStudentsGrowthData, setAllStudentsGrowthData] = useState<Record<number, Growth[]>>({});
 
   // 성별에 따른 평균 키 데이터 (x: 나이, y: 키)
   const femaleHeightData = [
@@ -88,6 +91,9 @@ export default function HealthIndividual() {
         setActiveClass(null);
         setSelectedStudent(null);
         setGrowthData([]);
+        
+        // 모든 학생의 성장 데이터 로드
+        await fetchAllStudentsGrowthData(studentList);
       } catch (error) {
         console.error('학생 목록 로딩 오류:', error);
       } finally {
@@ -97,6 +103,34 @@ export default function HealthIndividual() {
     
     fetchStudents();
   }, []);
+
+  // 모든 학생의 성장 데이터 가져오기
+  const fetchAllStudentsGrowthData = async (studentList: Student[]) => {
+    try {
+      const growthDataMap: Record<number, Growth[]> = {};
+      
+      // 각 학생의 성장 데이터를 병렬로 가져오기
+      const promises = studentList.map(async (student) => {
+        try {
+          const response = await fetch(`/api/growths?studentId=${student.id}&limit=5&sort=measurementDate,desc`);
+          if (response.ok) {
+            const data = await response.json();
+            growthDataMap[student.id] = data.items || [];
+          } else {
+            growthDataMap[student.id] = [];
+          }
+        } catch (error) {
+          console.error(`학생 ${student.id}의 성장 데이터 로딩 오류:`, error);
+          growthDataMap[student.id] = [];
+        }
+      });
+      
+      await Promise.all(promises);
+      setAllStudentsGrowthData(growthDataMap);
+    } catch (error) {
+      console.error('전체 학생 성장 데이터 로딩 오류:', error);
+    }
+  };
 
   // 학생의 건강검진 데이터 가져오기
   const fetchHealthData = async (studentId: number) => {
@@ -151,36 +185,59 @@ export default function HealthIndividual() {
       )
     : students;
 
-  // 건강 구분별 학생 필터링 (임시로 모든 학생 표시)
+  // 건강 구분별 학생 필터링 (실제 성장 데이터 기반)
   const filteredStudentsByHealth = useMemo(() => {
     if (!activeHealthFilter) return filteredStudentsByClass;
     
-    // 임시 구현: 학생 ID를 기반으로 랜덤하게 필터링
-    // 실제로는 각 학생의 성장 데이터를 미리 로드해야 함
     return filteredStudentsByClass.filter(student => {
-      const studentId = student.id;
-      const hash = studentId % 6; // 0-5 범위의 값
+      const growthData = allStudentsGrowthData[student.id];
+      if (!growthData || growthData.length === 0) {
+        return activeHealthFilter === '데이터미등록';
+      }
+
+      const latestGrowth = growthData[0]; // 최신 데이터 사용
+      const bmi = Number(latestGrowth.bmi);
+      const waistCircumference = latestGrowth.waistCircumference ? Number(latestGrowth.waistCircumference) : null;
+      const height = Number(latestGrowth.height);
       
+      // BMI 기반 비만도 판정
+      let bmiCategory = '';
+      if (student.gender === 'male') {
+        if (bmi < 14.7) bmiCategory = '저체중';
+        else if (bmi < 21.2) bmiCategory = '정상체중';
+        else if (bmi < 23.1) bmiCategory = '과체중';
+        else bmiCategory = '비만';
+      } else {
+        if (bmi < 14.4) bmiCategory = '저체중';
+        else if (bmi < 20.6) bmiCategory = '정상체중';
+        else if (bmi < 22.4) bmiCategory = '과체중';
+        else bmiCategory = '비만';
+      }
+      
+      // 복부비만 판정
+      let abdominalCategory = '';
+      if (waistCircumference && height) {
+        const ratio = waistCircumference / height;
+        abdominalCategory = ratio < 0.43 ? '복부비만양호' : '복부비만의심';
+      }
+      
+      // 필터링 조건 확인
       switch (activeHealthFilter) {
         case '저체중':
-          return hash === 0;
         case '정상체중':
-          return hash === 1;
         case '과체중':
-          return hash === 2;
         case '비만':
-          return hash === 3;
+          return bmiCategory === activeHealthFilter;
         case '복부비만양호':
-          return hash === 4;
         case '복부비만의심':
-          return hash === 5;
+          return abdominalCategory === activeHealthFilter;
         case '데이터미등록':
-          return hash >= 6; // 실제로는 성장 데이터가 없는 학생들
+          return false; // 이미 위에서 처리됨
         default:
           return true;
       }
     });
-  }, [filteredStudentsByClass, activeHealthFilter]);
+  }, [filteredStudentsByClass, activeHealthFilter, allStudentsGrowthData]);
 
   // 각 건강 구분별 인원수 계산
   const healthCategoryCounts = useMemo(() => {
@@ -195,36 +252,44 @@ export default function HealthIndividual() {
     };
     
     filteredStudentsByClass.forEach(student => {
-      const studentId = student.id;
-      const hash = studentId % 6;
-      
-      switch (hash) {
-        case 0:
-          counts['저체중']++;
-          break;
-        case 1:
-          counts['정상체중']++;
-          break;
-        case 2:
-          counts['과체중']++;
-          break;
-        case 3:
-          counts['비만']++;
-          break;
-        case 4:
-          counts['복부비만양호']++;
-          break;
-        case 5:
-          counts['복부비만의심']++;
-          break;
-        default:
-          counts['데이터미등록']++;
-          break;
+      const growthData = allStudentsGrowthData[student.id];
+      if (!growthData || growthData.length === 0) {
+        counts['데이터미등록']++;
+        return;
       }
+
+      const latestGrowth = growthData[0];
+      const bmi = Number(latestGrowth.bmi);
+      const waistCircumference = latestGrowth.waistCircumference ? Number(latestGrowth.waistCircumference) : null;
+      const height = Number(latestGrowth.height);
+      
+      // BMI 기반 비만도 판정
+      let bmiCategory = '';
+      if (student.gender === 'male') {
+        if (bmi < 14.7) bmiCategory = '저체중';
+        else if (bmi < 21.2) bmiCategory = '정상체중';
+        else if (bmi < 23.1) bmiCategory = '과체중';
+        else bmiCategory = '비만';
+      } else {
+        if (bmi < 14.4) bmiCategory = '저체중';
+        else if (bmi < 20.6) bmiCategory = '정상체중';
+        else if (bmi < 22.4) bmiCategory = '과체중';
+        else bmiCategory = '비만';
+      }
+      
+      // 복부비만 판정
+      if (waistCircumference && height) {
+        const ratio = waistCircumference / height;
+        const abdominalCategory = ratio < 0.43 ? '복부비만양호' : '복부비만의심';
+        counts[abdominalCategory]++;
+      }
+      
+      // BMI 카테고리 카운트
+      counts[bmiCategory]++;
     });
     
     return counts;
-  }, [filteredStudentsByClass]);
+  }, [filteredStudentsByClass, allStudentsGrowthData]);
 
   // 검색 기능
   const filteredStudents = filteredStudentsByHealth.filter(student => 
@@ -234,7 +299,11 @@ export default function HealthIndividual() {
   // 클래스 변경 핸들러
   const handleStudentSelect = async (student: Student) => {
     setSelectedStudent(student);
-    setActiveClass({ grade: student.grade, classNumber: student.classNumber });
+    
+    // 건강구분 필터링이 활성화되어 있지 않을 때만 activeClass 설정
+    if (!activeHealthFilter) {
+      setActiveClass({ grade: student.grade, classNumber: student.classNumber });
+    }
     
     // 선택한 학생의 건강검진 데이터와 성장 데이터 가져오기
     await fetchHealthData(student.id);
@@ -332,7 +401,10 @@ export default function HealthIndividual() {
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 hidden group-hover:block">
                     <div 
                       className="py-2 px-4 hover:bg-gray-100 cursor-pointer text-sm"
-                      onClick={() => setActiveHealthFilter(null)}
+                      onClick={() => {
+                        setActiveHealthFilter(null);
+                        setActiveClass(null);
+                      }}
                     >
                       전체 학생 ({students.length})
                     </div>
